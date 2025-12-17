@@ -6,7 +6,7 @@ services:
 
   blah2:
     restart: always
-    image: ghcr.io/offworldlabs/blah2:__VERSION__
+    image: ghcr.io/offworldlabs/blah2:v0.1.5
     tty: true
     depends_on:
       - blah2_api
@@ -31,7 +31,7 @@ services:
 
   blah2_web:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-web:__VERSION__
+    image: ghcr.io/offworldlabs/blah2-web:v0.1.5
     ports:
       - 49152:80
     networks:
@@ -40,7 +40,7 @@ services:
 
   blah2_api:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-api:__VERSION__
+    image: ghcr.io/offworldlabs/blah2-api:v0.1.5
     volumes:
       - /data/blah2/config:/usr/src/app/config # Shared config directory (user.yml + debug copies)
     network_mode: host
@@ -51,7 +51,7 @@ services:
 
   blah2_host:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-host:__VERSION__
+    image: ghcr.io/offworldlabs/blah2-host:v0.1.5
     ports:
       - "8080:80"
     networks:
