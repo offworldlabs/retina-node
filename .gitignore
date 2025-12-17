@@ -1,0 +1,17 @@
+# Build outputs
+manifests/
+artifacts/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+
+# Environment
+.env
+*.local
+
+# OS
+.DS_Store
