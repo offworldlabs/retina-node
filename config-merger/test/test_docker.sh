@@ -3,10 +3,10 @@
 
 set -e
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 echo "Building config-merger image..."
-docker build -t retina-config-merger:test -f Dockerfile ..
+docker build -t retina-config-merger:test -f config-merger/Dockerfile .
 
 echo "Running basic merge test..."
 TEST_DIR=$(mktemp -d)

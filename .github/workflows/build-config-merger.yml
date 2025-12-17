@@ -39,7 +39,8 @@ jobs:
       - name: Build config-merger
         uses: docker/build-push-action@v6
         with:
-          context: ./config-merger
+          context: .
+          file: ./config-merger/Dockerfile
           platforms: linux/arm64
           push: false
           load: true
