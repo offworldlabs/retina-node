@@ -19,5 +19,5 @@ COPY ../config/forced.yml /config/defaults/forced.yml
 WORKDIR /config
 
 # Default command (can be overridden in docker-compose)
-# Args: <defaults_dir> <user_config> <output_config> <debug_output>
-CMD ["python3", "/usr/local/bin/merge_config.py", "/config/defaults", "/data/blah2/config/user.yml", "/config/merged/config.yml", "/data/blah2/config/config.debug.yml"]
+# Args: <defaults_dir> <user_config> <output_config>
+CMD ["python3", "/usr/local/bin/merge_config.py", "/config/defaults", "/data/retina-node/config/user.yml", "/data/retina-node/config/config.yml"]

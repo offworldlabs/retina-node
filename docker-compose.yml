@@ -4,14 +4,24 @@ networks:
 
 services:
 
+  config-merger:
+    restart: "no"  # Run once and exit
+    image: ghcr.io/offworldlabs/retina-config-merger:v0.1.0
+    volumes:
+      - /data/retina-node/config:/data/retina-node/config
+    container_name: retina-config-merger
+
   blah2:
     restart: always
     image: ghcr.io/offworldlabs/blah2:v0.1.5
     tty: true
     depends_on:
-      - blah2_api
+      config-merger:
+        condition: service_completed_successfully
+      blah2_api:
+        condition: service_started
     volumes: #Persistant storage in /data/
-      - /data/blah2/config:/opt/blah2/config # Shared config directory (user.yml + debug copies)
+      - /data/retina-node/config:/opt/blah2/config:ro # Read-only merged config from config-merger
       - /data/blah2/save:/opt/blah2/save
 
       - /dev/shm:/dev/shm:rw
@@ -24,9 +34,9 @@ services:
     network_mode: host
     pid: "host"
     privileged: true
-    # Command: restart SDR -> merge configs (default.yml + user.yml + forced.yml) -> start app
-    # Config merge: reads /opt/blah2/config/user.yml, writes internal /opt/blah2/config.yml + debug copy out
-    command: bash -c "/opt/blah2/sdrplay-restart.sh && python3 /opt/blah2/script/merge_config.py /opt/blah2/defaults /opt/blah2/config/user.yml /opt/blah2/config.yml /opt/blah2/config/config.blah2.debug.yml && /opt/blah2/bin/blah2 -c /opt/blah2/config.yml"
+    # Command: restart SDR -> start app with pre-merged config
+    # Config is merged by config-merger service, no merge needed here
+    command: bash -c "/opt/blah2/sdrplay-restart.sh && /opt/blah2/bin/blah2 -c /opt/blah2/config/config.yml"
     container_name: blah2
 
   blah2_web:
@@ -41,12 +51,15 @@ services:
   blah2_api:
     restart: always
     image: ghcr.io/offworldlabs/blah2-api:v0.1.5
+    depends_on:
+      config-merger:
+        condition: service_completed_successfully
     volumes:
-      - /data/blah2/config:/usr/src/app/config # Shared config directory (user.yml + debug copies)
+      - /data/retina-node/config:/usr/src/app/config:ro # Read-only merged config from config-merger
     network_mode: host
-    # Command: merge configs (default.yml + user.yml + forced.yml) -> start API server
-    # Config merge: reads /usr/src/app/config/user.yml, writes internal /usr/src/app/config.yml + debug copy out
-    command: bash -c "python3 /usr/src/app/script/merge_config.py /usr/src/app/defaults /usr/src/app/config/user.yml /usr/src/app/config.yml /usr/src/app/config/config.api.debug.yml && node server.js /usr/src/app/config.yml"
+    # Command: start API server with pre-merged config
+    # Config is merged by config-merger service, no merge needed here
+    command: bash -c "node server.js /usr/src/app/config/config.yml"
     container_name: blah2-api
 
   blah2_host:

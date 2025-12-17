@@ -96,15 +96,14 @@ def ensure_node_id(user_config_path):
 
 def main():
     # Parse command-line arguments
-    if len(sys.argv) != 5:
-        print("Usage: merge_config.py <defaults_dir> <user_config_path> <output_config_path> <debug_copy_path>")
-        print("Example: merge_config.py /opt/blah2/defaults /opt/blah2/config/user.yml /opt/blah2/config.yml /opt/blah2/config/config.blah2.yml")
+    if len(sys.argv) != 4:
+        print("Usage: merge_config.py <defaults_dir> <user_config_path> <output_config_path>")
+        print("Example: merge_config.py /config/defaults /data/retina-node/config/user.yml /data/retina-node/config/config.yml")
         sys.exit(1)
-    
+
     defaults_dir = sys.argv[1]
     user_config_path = sys.argv[2]
     output_config_path = sys.argv[3]
-    debug_copy_path = sys.argv[4]
     
     # Construct paths
     default_config = os.path.join(defaults_dir, 'default.yml')
@@ -167,13 +166,7 @@ def main():
         os.makedirs(os.path.dirname(output_config_path), exist_ok=True)
         with open(output_config_path, 'w') as f:
             yaml.dump(config, f, default_flow_style=False, sort_keys=False)
-        
-        # Write debug copy to shared location
-        if debug_copy_path:
-            print(f"Writing debug copy to {debug_copy_path}")
-            os.makedirs(os.path.dirname(debug_copy_path), exist_ok=True)
-            shutil.copy(output_config_path, debug_copy_path)
-        
+
         print("Config merge completed successfully!")
         
     except Exception as e:
