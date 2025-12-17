@@ -22,14 +22,14 @@ services:
         condition: service_started
     volumes: #Persistant storage in /data/
       - /data/retina-node/config:/opt/blah2/config:ro # Read-only merged config from config-merger
-      - /data/blah2/save:/opt/blah2/save
+      - /data/retina-node/blah2/save:/opt/blah2/save
 
       - /dev/shm:/dev/shm:rw
       - /dev/bus/usb:/dev/bus/usb:rw
       - /usr/local/lib/libsdrplay_api.so.3.15:/usr/local/lib/libsdrplay_api.so.3:ro
-      - /data/blah2/test:/opt/blah2/test
+      - /data/retina-node/blah2/test:/opt/blah2/test
 
-      - /data/blah2/script/sdrplay-restart.sh:/opt/blah2/sdrplay-restart.sh #@TODO - can we bake this in?
+      - /data/retina-node/blah2/script/sdrplay-restart.sh:/opt/blah2/sdrplay-restart.sh #@TODO - can we bake this in?
 
     network_mode: host
     pid: "host"
