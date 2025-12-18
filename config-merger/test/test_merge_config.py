@@ -365,5 +365,61 @@ class TestConfigMerge(unittest.TestCase):
         self.assertIn('ADSBLOL_ENABLED=true', env_content)
         self.assertIn('ADSBLOL_RADIUS=40', env_content)
 
+    def test_tar1090_env_with_adsb_source(self):
+        """Test that ADSB_SOURCE is included in .env when configured"""
+        default_config = {
+            'tar1090': {
+                'adsb_source': '192.168.8.183,30005,beast_in',
+                'adsblol_fallback': True,
+                'adsblol_radius': 40,
+                'location': {
+                    'latitude': -34.9192,
+                    'longitude': 138.6027,
+                    'altitude': 110
+                }
+            }
+        }
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        # Check tar1090.env contains ADSB_SOURCE
+        env_path = os.path.join(self.config_dir, 'tar1090.env')
+        self.assertTrue(os.path.exists(env_path))
+
+        with open(env_path, 'r') as f:
+            env_content = f.read()
+
+        self.assertIn('ADSB_SOURCE=192.168.8.183,30005,beast_in', env_content)
+
+    def test_tar1090_env_without_adsb_source(self):
+        """Test that ADSB_SOURCE is omitted when not configured (empty string)"""
+        default_config = {
+            'tar1090': {
+                'adsb_source': '',  # Empty string - should not be included in .env
+                'adsblol_fallback': True,
+                'adsblol_radius': 40,
+                'location': {
+                    'latitude': -34.9192,
+                    'longitude': 138.6027,
+                    'altitude': 110
+                }
+            }
+        }
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        # Check tar1090.env does NOT contain ADSB_SOURCE
+        env_path = os.path.join(self.config_dir, 'tar1090.env')
+        self.assertTrue(os.path.exists(env_path))
+
+        with open(env_path, 'r') as f:
+            env_content = f.read()
+
+        self.assertNotIn('ADSB_SOURCE', env_content)
+
 if __name__ == '__main__':
     unittest.main()

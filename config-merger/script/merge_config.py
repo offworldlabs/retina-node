@@ -53,7 +53,7 @@ def get_rpi_serial():
 
 
 def generate_env_file(config, output_dir):
-    """Generate .env file for tar1090-node from merged config"""
+    """Generate .env file for ADS-B services (readsb, tar1090) from merged config"""
     if 'tar1090' not in config:
         print("No tar1090 config found, skipping .env generation")
         return
@@ -73,6 +73,11 @@ def generate_env_file(config, output_dir):
         f.write(f"RECEIVER_ALT={location.get('altitude', 0)}\n")
         f.write(f"ADSBLOL_ENABLED={'true' if tar1090_config.get('adsblol_fallback', False) else 'false'}\n")
         f.write(f"ADSBLOL_RADIUS={tar1090_config.get('adsblol_radius', 40)}\n")
+
+        # Add ADSB_SOURCE if configured (for readsb external feed)
+        adsb_source = tar1090_config.get('adsb_source', '')
+        if adsb_source:
+            f.write(f"ADSB_SOURCE={adsb_source}\n")
 
     os.rename(temp_path, env_path)
     print("tar1090 .env generated successfully!")
