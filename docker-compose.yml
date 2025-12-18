@@ -74,3 +74,61 @@ services:
       - blah2_web
       - blah2_api
 
+  readsb:
+    restart: always
+    image: ghcr.io/sdr-enthusiasts/docker-readsb-protobuf:latest
+    container_name: readsb
+    hostname: readsb
+    network_mode: host
+    environment:
+      - TZ=UTC
+      - READSB_DEVICE_TYPE=none
+      - READSB_LAT=${RECEIVER_LAT:-0}
+      - READSB_LON=${RECEIVER_LON:-0}
+      - READSB_ALT=${RECEIVER_ALT:-0}
+      - READSB_RX_LOCATION_ACCURACY=2
+      - READSB_STATS_RANGE=true
+      - READSB_NET_ENABLE=true
+      - DISABLE_WEBAPP=true
+      - READSB_NET_CONNECTOR=${ADSB_SOURCE:-}
+    volumes:
+      - readsb-autogain:/run/autogain
+      - readsb-collectd:/run/collectd
+    tmpfs:
+      - /var/log:size=32M
+
+  tar1090:
+    restart: always
+    image: ghcr.io/offworldlabs/tar1090-node:latest
+    container_name: tar1090
+    hostname: tar1090
+    network_mode: host
+    depends_on:
+      - readsb
+    environment:
+      - TZ=UTC
+      - BEASTHOST=127.0.0.1
+      - BEASTPORT=30005
+      - LAT=${RECEIVER_LAT:-0}
+      - LONG=${RECEIVER_LON:-0}
+      - TAR1090_DEFAULTCENTERLAT=${RECEIVER_LAT:-0}
+      - TAR1090_DEFAULTCENTERLON=${RECEIVER_LON:-0}
+      - READSB_URL=http://127.0.0.1:80/data/aircraft.json
+      - ADSBLOL_ENABLED=${ADSBLOL_ENABLED:-false}
+      - RECEIVER_LAT=${RECEIVER_LAT:-0}
+      - RECEIVER_LON=${RECEIVER_LON:-0}
+      - ADSBLOL_RADIUS=${ADSBLOL_RADIUS:-40}
+      - PROXY_PORT=3000
+
+  adsb2dd:
+    restart: always
+    image: ghcr.io/offworldlabs/adsb2dd:latest
+    network_mode: host
+    container_name: adsb2dd
+    environment:
+      - TZ=UTC
+
+volumes:
+  readsb-autogain:
+  readsb-collectd:
+
