@@ -89,3 +89,12 @@ save:
   detection: true
   timing: false
   path: "/blah2/save/"
+
+# tar1090-node configuration
+tar1090:
+  adsblol_fallback: true
+  adsblol_radius: 40
+  location:
+    latitude: -34.9192
+    longitude: 138.6027
+    altitude: 110
