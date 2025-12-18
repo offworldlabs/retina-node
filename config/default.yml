@@ -92,7 +92,7 @@ save:
 
 # tar1090-node configuration
 tar1090:
-  adsb_source: ""  # Format: "IP,PORT,PROTOCOL" e.g. "192.168.8.183,30005,beast_in"
+  adsb_source: "192.168.8.183,30005,beast_in"  # External ADS-B feed (IP,PORT,PROTOCOL)
   adsblol_fallback: true
   adsblol_radius: 40
   location:
