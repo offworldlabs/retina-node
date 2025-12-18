@@ -202,6 +202,115 @@ class TestConfigMerge(unittest.TestCase):
         # List should be replaced, not merged
         self.assertEqual(output['list_items'], [4, 5])
 
+    def test_tar1090_env_generated(self):
+        """Test that tar1090.env is generated when tar1090 config exists"""
+        default_config = {
+            'process': {'detection': {'pfa': 0.001}},
+            'tar1090': {
+                'adsblol_fallback': True,
+                'adsblol_radius': 50,
+                'location': {
+                    'latitude': -34.9192,
+                    'longitude': 138.6027,
+                    'altitude': 110
+                }
+            }
+        }
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        # Check tar1090.env was created
+        env_path = os.path.join(self.config_dir, 'tar1090.env')
+        self.assertTrue(os.path.exists(env_path), "tar1090.env should be generated")
+
+        # Read and verify contents
+        with open(env_path, 'r') as f:
+            env_content = f.read()
+
+        self.assertIn('RECEIVER_LAT=-34.9192', env_content)
+        self.assertIn('RECEIVER_LON=138.6027', env_content)
+        self.assertIn('RECEIVER_ALT=110', env_content)
+        self.assertIn('ADSBLOL_ENABLED=true', env_content)
+        self.assertIn('ADSBLOL_RADIUS=50', env_content)
+
+    def test_tar1090_env_not_generated_without_config(self):
+        """Test that tar1090.env is not generated when tar1090 config is missing"""
+        default_config = {
+            'process': {'detection': {'pfa': 0.001}},
+            'network': {'ip': '0.0.0.0'}
+        }
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        # Check tar1090.env was NOT created
+        env_path = os.path.join(self.config_dir, 'tar1090.env')
+        self.assertFalse(os.path.exists(env_path), "tar1090.env should not be generated without tar1090 config")
+
+    def test_tar1090_env_adsblol_disabled(self):
+        """Test that ADSBLOL_ENABLED is false when adsblol_fallback is false"""
+        default_config = {
+            'tar1090': {
+                'adsblol_fallback': False,
+                'adsblol_radius': 40,
+                'location': {
+                    'latitude': 0,
+                    'longitude': 0,
+                    'altitude': 0
+                }
+            }
+        }
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        env_path = os.path.join(self.config_dir, 'tar1090.env')
+        with open(env_path, 'r') as f:
+            env_content = f.read()
+
+        self.assertIn('ADSBLOL_ENABLED=false', env_content)
+
+    def test_tar1090_env_user_override(self):
+        """Test that user config overrides tar1090 settings in .env"""
+        default_config = {
+            'tar1090': {
+                'adsblol_fallback': True,
+                'adsblol_radius': 40,
+                'location': {
+                    'latitude': 0,
+                    'longitude': 0,
+                    'altitude': 0
+                }
+            }
+        }
+        user_config = {
+            'tar1090': {
+                'adsblol_radius': 100,
+                'location': {
+                    'latitude': 51.5074
+                }
+            }
+        }
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+        self.write_yaml(os.path.join(self.config_dir, 'user.yml'), user_config)
+
+        self.run_merge()
+
+        env_path = os.path.join(self.config_dir, 'tar1090.env')
+        with open(env_path, 'r') as f:
+            env_content = f.read()
+
+        # User overrides should apply
+        self.assertIn('RECEIVER_LAT=51.5074', env_content)
+        self.assertIn('ADSBLOL_RADIUS=100', env_content)
+        # Defaults should remain for non-overridden values
+        self.assertIn('RECEIVER_LON=0', env_content)
+
     def test_actual_config_files(self):
         """Test merge with actual config files from retina-node repo"""
         import subprocess
@@ -241,6 +350,20 @@ class TestConfigMerge(unittest.TestCase):
         self.assertIn('process', output)
         self.assertIn('network', output)
         self.assertEqual(output['network']['node_id'], 'test-node')
+
+        # Verify tar1090.env was generated
+        env_path = os.path.join(self.config_dir, 'tar1090.env')
+        self.assertTrue(os.path.exists(env_path), "tar1090.env should be generated with actual config")
+
+        with open(env_path, 'r') as f:
+            env_content = f.read()
+
+        # Check expected values from default.yml
+        self.assertIn('RECEIVER_LAT=-34.9192', env_content)
+        self.assertIn('RECEIVER_LON=138.6027', env_content)
+        self.assertIn('RECEIVER_ALT=110', env_content)
+        self.assertIn('ADSBLOL_ENABLED=true', env_content)
+        self.assertIn('ADSBLOL_RADIUS=40', env_content)
 
 if __name__ == '__main__':
     unittest.main()
