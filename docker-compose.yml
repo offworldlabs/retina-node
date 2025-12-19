@@ -85,9 +85,9 @@ services:
     environment:
       - TZ=UTC
       - READSB_DEVICE_TYPE=none
-      - READSB_LAT=${READSB_LAT:-0}
-      - READSB_LON=${READSB_LON:-0}
-      - READSB_ALT=${READSB_ALT:-0}
+      - READSB_LAT=${RECEIVER_LAT:-0}
+      - READSB_LON=${RECEIVER_LON:-0}
+      - READSB_ALT=${RECEIVER_ALT:-0}
       - READSB_RX_LOCATION_ACCURACY=2
       - READSB_STATS_RANGE=true
       - READSB_NET_ENABLE=true
