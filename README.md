@@ -46,20 +46,19 @@ Later files override earlier ones.
 
 > **TODO:** Web UI for configuration management.
 
-1. Edit user.yml (not config.yml):
-   ```bash
-   nano /data/retina-node/config/user.yml
-   ```
+```bash
+# 1. Edit config
+sudo nano /data/retina-node/config/user.yml
 
-2. Restart stack to regenerate merged config:
-   ```bash
-   cd /data/mender-app/retina-node/manifests && sudo docker compose down --remove-orphans && sudo docker compose up -d
-   ```
+# 2. Re-merge config
+sudo docker compose run --rm config-merger
 
-3. Verify:
-   ```bash
-   cat /data/retina-node/config/config.yml
-   ```
+# 3. Restart services to pick up changes
+sudo docker compose restart
+
+# 4. Verify
+cat /data/retina-node/config/config.yml
+```
 
 ### Editing Default/Forced Config
 
