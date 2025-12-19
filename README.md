@@ -67,6 +67,9 @@ sudo docker compose run --rm config-merger
 sudo docker compose down && sudo docker compose up -d
 ```
 
+**Why restart is needed:** Docker Compose reads environment variables from `.env` at container start time, not when the file changes. Config-merger generates `.env` with location and ADS-B settings, but services that started before this file existed won't have the correct values. The restart ensures all services pick up the generated configuration.
+
+
 ### Editing Default/Forced Config
 
 Edit files in `config-merger/config/` directory in this repo, then rebuild and deploy.
