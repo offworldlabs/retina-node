@@ -114,7 +114,7 @@ services:
       - BEASTHOST=127.0.0.1
       - BEASTPORT=30005
       - READSB_URL=http://127.0.0.1:80/data/aircraft.json
-      - PROXY_PORT=3000
+      - PROXY_PORT=3010
 
   adsb2dd:
     restart: always
