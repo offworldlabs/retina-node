@@ -6,7 +6,7 @@ services:
 
   config-merger:
     restart: "no"  # Run once and exit
-    image: ghcr.io/offworldlabs/retina-config-merger:latest
+    image: ghcr.io/offworldlabs/retina-config-merger:v0.2.7
     volumes:
       - /data/retina-node/config:/data/retina-node/config
       - /data/mender-app:/data/mender-app
@@ -127,7 +127,7 @@ services:
 
   adsb2dd:
     restart: always
-    image: ghcr.io/offworldlabs/adsb2dd:dev
+    image: ghcr.io/offworldlabs/adsb2dd:v0.1.0
     network_mode: host
     container_name: adsb2dd
     environment:

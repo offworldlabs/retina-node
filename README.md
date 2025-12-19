@@ -50,8 +50,8 @@ sudo nano /data/retina-node/config/user.yml
 
 # 2. Regenerate .env and restart services
 cd /data/mender-app/retina-node/manifests
-sudo docker compose run --rm config-merger
-sudo docker compose down && sudo docker compose up -d
+sudo docker compose -p retina-node run --rm config-merger
+sudo docker compose -p retina-node up -d --force-recreate
 
 # 3. Verify
 cat /data/retina-node/config/config.yml
@@ -63,8 +63,8 @@ After initial Mender deployment, run config-merger and restart to apply config:
 
 ```bash
 cd /data/mender-app/retina-node/manifests
-sudo docker compose run --rm config-merger
-sudo docker compose down && sudo docker compose up -d
+sudo docker compose -p retina-node run --rm config-merger
+sudo docker compose -p retina-node up -d --force-recreate
 ```
 
 **Why restart is needed:** Docker Compose reads environment variables from `.env` at container start time, not when the file changes. Config-merger generates `.env` with location and ADS-B settings, but services that started before this file existed won't have the correct values. The restart ensures all services pick up the generated configuration.
