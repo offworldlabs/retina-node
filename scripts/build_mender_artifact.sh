@@ -60,15 +60,27 @@ mkdir -p "${MANIFEST_DIR}" artifacts
 # Copy compose file to manifest directory (no templating)
 cp "${COMPOSE_FILE}" "${MANIFEST_DIR}/docker-compose.yaml"
 
-# Validate compose
-docker compose -f "${MANIFEST_DIR}/docker-compose.yaml" config >/dev/null 2>&1 || {
-  echo "Error: Invalid docker-compose.yaml"
-  exit 1
-}
+# Create minimal dummy env file for validation (removed after image extraction)
+# Real tar1090.env is generated at runtime by config-merger
+mkdir -p "${MANIFEST_DIR}/config"
+cat > "${MANIFEST_DIR}/config/tar1090.env" <<'EOF'
+RECEIVER_LAT=0
+RECEIVER_LON=0
+RECEIVER_ALT=0
+ADSBLOL_ENABLED=false
+ADSBLOL_RADIUS=40
+EOF
+
+# Temporarily update env_file path for validation
+sed -i.bak 's|/data/retina-node/config/tar1090.env|config/tar1090.env|g' "${MANIFEST_DIR}/docker-compose.yaml"
 
 # Extract image tags from docker-compose.yml
 echo "Extracting images from docker-compose.yaml..."
 IMAGES=$(docker compose -f "${MANIFEST_DIR}/docker-compose.yaml" config --images 2>/dev/null)
+
+# Restore original env_file path and clean up
+mv "${MANIFEST_DIR}/docker-compose.yaml.bak" "${MANIFEST_DIR}/docker-compose.yaml"
+rm -rf "${MANIFEST_DIR}/config"
 
 if [ -z "$IMAGES" ]; then
   echo "Error: No images found in docker-compose.yaml"
@@ -95,7 +107,7 @@ SOFTWARE_ARGS=(
 )
 
 # Add images to app-gen arguments
-# For delta updates, we'd need previous image tags - keeping it simple for now (full updates only)
+# For delta updates, we'd need previous image tags 
 if [ -n "$PREV_VERSION" ]; then
   echo "Warning: Delta updates require manual configuration - performing full update"
 fi
