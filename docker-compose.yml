@@ -6,7 +6,7 @@ services:
 
   config-merger:
     restart: "no"  # Run once and exit
-    image: ghcr.io/offworldlabs/retina-config-merger:v0.2.1
+    image: ghcr.io/offworldlabs/retina-config-merger:latest
     volumes:
       - /data/retina-node/config:/data/retina-node/config
     container_name: retina-config-merger
@@ -86,13 +86,9 @@ services:
     environment:
       - TZ=UTC
       - READSB_DEVICE_TYPE=none
-      - READSB_LAT=${RECEIVER_LAT:-0}
-      - READSB_LON=${RECEIVER_LON:-0}
-      - READSB_ALT=${RECEIVER_ALT:-0}
       - READSB_RX_LOCATION_ACCURACY=2
       - READSB_STATS_RANGE=true
       - READSB_NET_ENABLE=true
-      - READSB_NET_CONNECTOR=${ADSB_SOURCE}
       - DISABLE_WEBAPP=true
     volumes:
       - readsb-autogain:/run/autogain
@@ -117,10 +113,6 @@ services:
       - TZ=UTC
       - BEASTHOST=127.0.0.1
       - BEASTPORT=30005
-      - LAT=${RECEIVER_LAT:-0}
-      - LONG=${RECEIVER_LON:-0}
-      - TAR1090_DEFAULTCENTERLAT=${RECEIVER_LAT:-0}
-      - TAR1090_DEFAULTCENTERLON=${RECEIVER_LON:-0}
       - READSB_URL=http://127.0.0.1:80/data/aircraft.json
       - PROXY_PORT=3010
 
