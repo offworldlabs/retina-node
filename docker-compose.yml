@@ -6,7 +6,7 @@ services:
 
   config-merger:
     restart: "no"  # Run once and exit
-    image: ghcr.io/offworldlabs/retina-config-merger:v0.1.0
+    image: ghcr.io/offworldlabs/retina-config-merger:v0.2.0
     volumes:
       - /data/retina-node/config:/data/retina-node/config
     container_name: retina-config-merger
