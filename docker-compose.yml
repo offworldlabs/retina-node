@@ -124,6 +124,16 @@ services:
     environment:
       - TZ=UTC
 
+  # Cloudflare Tunnel - uncomment when token is available
+  # cloudflared:
+  #   restart: always
+  #   image: cloudflare/cloudflared:latest
+  #   command: tunnel run
+  #   environment:
+  #     - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+  #   network_mode: host
+  #   container_name: cloudflared
+
 volumes:
   readsb-autogain:
   readsb-collectd:
