@@ -103,6 +103,18 @@ def generate_env_file(config, output_dir):
     os.rename(temp_path, env_path)
     print("tar1090 .env generated successfully!")
 
+    # Copy .env to Mender compose directories for variable substitution
+    # Mender creates: retina-node (current) and retina-node-last (for rollback)
+    for suffix in ['', '-last']:
+        manifests_dir = f'/data/mender-app/retina-node{suffix}/manifests'
+        env_dest = os.path.join(manifests_dir, '.env')
+        try:
+            if os.path.isdir(manifests_dir):
+                shutil.copy(env_path, env_dest)
+                print(f"Copied .env to {env_dest}")
+        except Exception as e:
+            print(f"Note: Could not copy to {env_dest}: {e}")
+
 
 def ensure_node_id(user_config_path):
     """Add/update node_id in user config to match hardware serial"""
