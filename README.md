@@ -19,12 +19,13 @@ Access nodes via Mender troubleshooting terminal.
 ```
 /data/
 ├── mender-app/retina-node/manifests/
-│   └── docker-compose.yaml    # Deployed compose file
+│   ├── docker-compose.yaml    # Deployed compose file
+│   └── .env                   # Environment vars (copied by config-merger)
 │
 └── retina-node/
     ├── config/
     │   ├── user.yml           # User config overrides (edit this)
-    │   ├── config.yml         # Merged config (auto-generated)
+    │   ├── config.yml         # Merged blah2 config (auto-generated)
     │   └── tar1090.env        # tar1090 env vars (auto-generated)
     └── blah2/
         ├── save/              # Persistent radar data
@@ -44,20 +45,27 @@ Later files override earlier ones.
 
 ### Editing Config on a Node
 
-> **TODO:** Web UI for configuration management.
-
 ```bash
 # 1. Edit config
 sudo nano /data/retina-node/config/user.yml
 
-# 2. Re-merge config
+# 2. Regenerate .env and restart services
+cd /data/mender-app/retina-node/manifests
 sudo docker compose run --rm config-merger
+sudo docker compose down && sudo docker compose up -d
 
-# 3. Restart services to pick up changes
-sudo docker compose restart
-
-# 4. Verify
+# 3. Verify
 cat /data/retina-node/config/config.yml
+```
+
+### First Deployment
+
+After initial Mender deployment, run config-merger and restart to apply config:
+
+```bash
+cd /data/mender-app/retina-node/manifests
+sudo docker compose run --rm config-merger
+sudo docker compose down && sudo docker compose up -d
 ```
 
 ### Editing Default/Forced Config
