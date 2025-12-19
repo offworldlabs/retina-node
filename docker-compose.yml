@@ -6,14 +6,14 @@ services:
 
   config-merger:
     restart: "no"  # Run once and exit
-    image: ghcr.io/offworldlabs/retina-config-merger:v0.2.0
+    image: ghcr.io/offworldlabs/retina-config-merger:v0.2.1
     volumes:
       - /data/retina-node/config:/data/retina-node/config
     container_name: retina-config-merger
 
   blah2:
     restart: always
-    image: ghcr.io/offworldlabs/blah2:v0.2.0
+    image: ghcr.io/offworldlabs/blah2:v0.2.1
     tty: true
     depends_on:
       config-merger:
@@ -40,7 +40,7 @@ services:
 
   blah2_web:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-web:v0.2.0
+    image: ghcr.io/offworldlabs/blah2-web:v0.2.1
     ports:
       - 49152:80
     networks:
@@ -49,7 +49,7 @@ services:
 
   blah2_api:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-api:v0.2.0
+    image: ghcr.io/offworldlabs/blah2-api:v0.2.1
     depends_on:
       config-merger:
         condition: service_completed_successfully
@@ -62,7 +62,7 @@ services:
 
   blah2_host:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-host:v0.2.0
+    image: ghcr.io/offworldlabs/blah2-host:v0.2.1
     ports:
       - "8080:80"
     networks:
