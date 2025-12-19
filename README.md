@@ -8,7 +8,7 @@ Deploy to nodes running owl-os via the Mender dashboard.
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| blah2 | `http://<PI_IP>:8080` (mDNS pending) | Passive radar UI |
+| blah2 | `http://<PI_IP>:8080` or `http://retina.local:8080` | Passive radar UI |
 | tar1090 | `http://<PI_IP>` or `http://retina.local` | ADS-B aircraft map |
 | adsb2dd | `http://<PI_IP>:49155` or `http://retina.local:49155` | Delay-Doppler converter |
 
