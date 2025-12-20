@@ -12,6 +12,25 @@ Deploy to nodes running owl-os via the Mender dashboard.
 | tar1090 | `http://<PI_IP>` or `http://retina.local` | ADS-B aircraft map |
 | adsb2dd | `http://<PI_IP>:49155` or `http://retina.local:49155` | Delay-Doppler converter |
 
+## Useful Commands (Mender Terminal)
+
+**Check container status**
+```bash
+sudo docker ps
+```
+
+**View logs for a specific container**
+```bash
+sudo docker logs <container-name>
+```
+
+**Restart / update config**
+```bash
+cd /data/mender-app/retina-node/manifests
+sudo docker compose -p retina-node run --rm config-merger
+sudo docker compose -p retina-node up -d --force-recreate
+```
+
 ## Node Access
 
 Access nodes via Mender troubleshooting terminal.
