@@ -123,7 +123,7 @@ services:
       - RECEIVER_LAT=${RECEIVER_LAT:-0}
       - RECEIVER_LON=${RECEIVER_LON:-0}
       - ADSBLOL_RADIUS=${ADSBLOL_RADIUS:-40}
-      - PROXY_PORT=3010
+      - PROXY_PORT=3005
 
   adsb2dd:
     restart: always
