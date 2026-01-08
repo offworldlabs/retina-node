@@ -96,6 +96,6 @@ tar1090:
   adsblol_fallback: true
   adsblol_radius: 40
   location:
-    latitude: -34.9192
-    longitude: 138.6027
-    altitude: 110
+    latitude: 37.7644
+    longitude: -121.87222
+    altitude: 23
