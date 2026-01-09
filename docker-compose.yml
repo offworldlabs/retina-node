@@ -78,7 +78,7 @@ services:
 
   tar1090:
     restart: always
-    image: ghcr.io/offworldlabs/tar1090-node:latest
+    image: ghcr.io/offworldlabs/tar1090-node:v0.2.0-rc1
     container_name: tar1090
     hostname: tar1090
     network_mode: host
