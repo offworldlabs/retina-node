@@ -6,7 +6,7 @@ services:
 
   config-merger:
     restart: "no"  # Run once and exit
-    image: ghcr.io/offworldlabs/retina-config-merger:v0.2.7
+    image: ghcr.io/offworldlabs/retina-config-merger:v0.3.0
     volumes:
       - /data/retina-node/config:/data/retina-node/config
       - /data/mender-app:/data/mender-app
@@ -121,5 +121,4 @@ services:
     environment:
       - TZ=UTC
 
-# NOTE: readsb volumes removed - readsb is now built into tar1090
 
