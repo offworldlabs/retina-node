@@ -81,7 +81,10 @@ services:
     image: ghcr.io/offworldlabs/tar1090-node:v0.2.0-rc1
     container_name: tar1090
     hostname: tar1090
-    network_mode: host
+    ports:
+      - "8078:80"
+    networks:
+      - blah2
     depends_on:
       config-merger:
         condition: service_completed_successfully
