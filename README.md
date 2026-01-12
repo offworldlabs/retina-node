@@ -9,7 +9,7 @@ Deploy to nodes running [owl-os](https://github.com/offworldlabs/owl-os) via the
 | Service | Port | URL | Description |
 |---------|------|-----|-------------|
 | retina-gui | 80 | `http://retina.local` | Node management, SSH keys, service links |
-| blah2 | 8080 | `http://retina.local:8080` | Passive radar UI |
+| blah2 | 49152 | `http://retina.local:49152` | Passive radar UI |
 | tar1090 | 8078 | `http://retina.local:8078` | ADS-B aircraft map |
 | adsb2dd | 49155 | `http://retina.local:49155` | Delay-Doppler truth overlay |
 
