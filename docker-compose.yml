@@ -14,7 +14,7 @@ services:
 
   blah2:
     restart: always
-    image: ghcr.io/offworldlabs/blah2:v0.2.1
+    image: ghcr.io/offworldlabs/blah2:v0.2.5
     tty: true
     depends_on:
       config-merger:
