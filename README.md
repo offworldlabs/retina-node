@@ -2,15 +2,27 @@
 
 Orchestrator repository for Retina passive radar nodes. Manages docker-compose configuration and Mender OTA artifact generation.
 
-Deploy to nodes running owl-os via the Mender dashboard.
+Deploy to nodes running [owl-os](https://github.com/offworldlabs/owl-os) via the Mender dashboard. See owl-os README for installation instructions.
 
 ## Web Interfaces
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| blah2 | `http://<PI_IP>:8080` or `http://retina.local:8080` | Passive radar UI |
-| tar1090 | `http://<PI_IP>` or `http://retina.local` | ADS-B aircraft map |
-| adsb2dd | `http://<PI_IP>:49155` or `http://retina.local:49155` | Delay-Doppler converter |
+| Service | Port | URL | Description |
+|---------|------|-----|-------------|
+| retina-gui | 80 | `http://retina.local` | Node management, SSH keys, service links |
+| blah2 | 49152 | `http://retina.local:49152` | Passive radar UI |
+| tar1090 | 8078 | `http://retina.local:8078` | ADS-B aircraft map |
+| adsb2dd | 49155 | `http://retina.local:49155` | Delay-Doppler truth overlay |
+
+## SSH Access
+
+Add your SSH public key via the web GUI at `http://retina.local`:
+
+1. On your computer, copy your public key: `cat ~/.ssh/id_ed25519.pub`
+2. Open `http://retina.local` in a browser
+3. Paste the key and click "Add Key"
+4. SSH in: `ssh node@retina.local`
+
+Keys persist across reboots and OTA updates.
 
 ## Useful Commands (Mender Terminal)
 
@@ -86,7 +98,7 @@ sudo docker compose -p retina-node run --rm config-merger
 sudo docker compose -p retina-node up -d --force-recreate
 ```
 
-**Why restart is needed:** Docker Compose reads environment variables from `.env` at container start time, not when the file changes. Config-merger generates `.env` with location and ADS-B settings, but services that started before this file existed won't have the correct values. The restart ensures all services pick up the generated configuration. This will no longer be needed once a GUI is in placex
+**Why restart is needed:** Docker Compose reads environment variables from `.env` at container start time, not when the file changes. Config-merger generates `.env` with location and ADS-B settings, but services that started before this file existed won't have the correct values. The restart ensures all services pick up the generated configuration. This will no longer be needed once config editing is added to retina-gui.
 
 
 ### Editing Default/Forced Config

@@ -86,16 +86,13 @@ location:
 save:
   iq: false
   map: false
-  detection: true
+  detection: false
   timing: false
-  path: "/blah2/save/"
+  path: "/opt/blah2/save/"
 
 # tar1090-node configuration
+# Note: tar1090 uses location.rx for receiver position (no separate tar1090.location needed)
 tar1090:
   adsb_source: "192.168.8.183,30005,beast_in"  # External ADS-B feed (IP,PORT,PROTOCOL)
   adsblol_fallback: true
   adsblol_radius: 40
-  location:
-    latitude: -34.9192
-    longitude: 138.6027
-    altitude: 110

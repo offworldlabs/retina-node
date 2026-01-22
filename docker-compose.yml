@@ -6,7 +6,7 @@ services:
 
   config-merger:
     restart: "no"  # Run once and exit
-    image: ghcr.io/offworldlabs/retina-config-merger:v0.2.7
+    image: ghcr.io/offworldlabs/retina-config-merger:v0.3.1
     volumes:
       - /data/retina-node/config:/data/retina-node/config
       - /data/mender-app:/data/mender-app
@@ -41,7 +41,7 @@ services:
 
   blah2_web:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-web:v0.2.2
+    image: ghcr.io/offworldlabs/blah2-web:v0.2.4
     ports:
       - 49152:80
     networks:
@@ -50,7 +50,7 @@ services:
 
   blah2_api:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-api:v0.2.2
+    image: ghcr.io/offworldlabs/blah2-api:v0.2.4
     depends_on:
       config-merger:
         condition: service_completed_successfully
@@ -63,7 +63,7 @@ services:
 
   blah2_host:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-host:v0.2.2
+    image: ghcr.io/offworldlabs/blah2-host:v0.2.4
     ports:
       - "8080:80"
     networks:
@@ -73,67 +73,52 @@ services:
       - blah2_web
       - blah2_api
 
-  readsb:
+  # NOTE: readsb is now built into tar1090 (docker-tar1090 image includes readsb)
+  # The separate readsb container has been removed
+
+  tar1090:
     restart: always
-    image: ghcr.io/sdr-enthusiasts/docker-readsb-protobuf:latest
-    container_name: readsb
-    hostname: readsb
-    network_mode: host
+    image: ghcr.io/offworldlabs/tar1090-node:v0.1.3
+    container_name: tar1090
+    hostname: tar1090
+    ports:
+      - "8078:80"
+    networks:
+      - blah2
     depends_on:
       config-merger:
         condition: service_completed_successfully
     environment:
       - TZ=UTC
+      # readsb config (built into docker-tar1090)
       - READSB_DEVICE_TYPE=none
+      - READSB_NET_ENABLE=true
+      - READSB_NET_CONNECTOR=${READSB_NET_CONNECTOR:-}
       - READSB_LAT=${RECEIVER_LAT:-0}
       - READSB_LON=${RECEIVER_LON:-0}
       - READSB_ALT=${RECEIVER_ALT:-0}
       - READSB_RX_LOCATION_ACCURACY=2
       - READSB_STATS_RANGE=true
-      - READSB_NET_ENABLE=true
-      - DISABLE_WEBAPP=true
-      - READSB_NET_CONNECTOR=${READSB_NET_CONNECTOR:-}
-    volumes:
-      - readsb-autogain:/run/autogain
-      - readsb-collectd:/run/collectd
-    tmpfs:
-      - /var/log:size=32M
-
-  tar1090:
-    restart: always
-    image: ghcr.io/offworldlabs/tar1090-node:dev
-    container_name: tar1090
-    hostname: tar1090
-    network_mode: host
-    depends_on:
-      config-merger:
-        condition: service_completed_successfully
-      readsb:
-        condition: service_started
-    environment:
-      - TZ=UTC
-      - BEASTHOST=127.0.0.1
-      - BEASTPORT=30005
+      # tar1090 map config
       - LAT=${RECEIVER_LAT:-0}
       - LONG=${RECEIVER_LON:-0}
       - TAR1090_DEFAULTCENTERLAT=${RECEIVER_LAT:-0}
       - TAR1090_DEFAULTCENTERLON=${RECEIVER_LON:-0}
-      - READSB_URL=http://127.0.0.1:80/data/aircraft.json
+      # adsb.lol proxy config
       - ADSBLOL_ENABLED=${ADSBLOL_ENABLED:-false}
       - RECEIVER_LAT=${RECEIVER_LAT:-0}
       - RECEIVER_LON=${RECEIVER_LON:-0}
       - ADSBLOL_RADIUS=${ADSBLOL_RADIUS:-40}
       - PROXY_PORT=3005
+    tmpfs:
+      - /var/log:size=32M
 
   adsb2dd:
     restart: always
-    image: ghcr.io/offworldlabs/adsb2dd:v0.1.0
+    image: ghcr.io/offworldlabs/adsb2dd:v0.1.1
     network_mode: host
     container_name: adsb2dd
     environment:
       - TZ=UTC
 
-volumes:
-  readsb-autogain:
-  readsb-collectd:
 

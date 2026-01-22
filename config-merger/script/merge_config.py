@@ -59,7 +59,8 @@ def generate_env_file(config, output_dir):
         return
 
     tar1090_config = config['tar1090']
-    location = tar1090_config.get('location', {})
+    # Use tar1090.location if set, otherwise fall back to location.rx (receiver location)
+    location = tar1090_config.get('location') or config.get('location', {}).get('rx', {})
 
     env_path = os.path.join(output_dir, 'tar1090.env')
     print(f"Writing tar1090 .env to {env_path}")
