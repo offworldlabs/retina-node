@@ -41,7 +41,7 @@ services:
 
   blah2_web:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-web:v0.2.4
+    image: ghcr.io/offworldlabs/blah2-web:v0.2.5
     ports:
       - 49152:80
     networks:
@@ -50,7 +50,7 @@ services:
 
   blah2_api:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-api:v0.2.4
+    image: ghcr.io/offworldlabs/blah2-api:v0.2.5
     depends_on:
       config-merger:
         condition: service_completed_successfully
@@ -63,7 +63,7 @@ services:
 
   blah2_host:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-host:v0.2.4
+    image: ghcr.io/offworldlabs/blah2-host:v0.2.5
     ports:
       - "8080:80"
     networks:
@@ -115,7 +115,7 @@ services:
 
   adsb2dd:
     restart: always
-    image: ghcr.io/offworldlabs/adsb2dd:v0.1.1
+    image: ghcr.io/offworldlabs/adsb2dd:v0.1.3
     network_mode: host
     container_name: adsb2dd
     environment:
