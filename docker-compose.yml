@@ -21,6 +21,8 @@ services:
         condition: service_completed_successfully
       blah2_api:
         condition: service_started
+    environment:
+      - BLAH2_VERBOSE=false
     volumes: #Persistant storage in /data/
       - /data/retina-node/config:/opt/blah2/config:ro # Read-only merged config from config-merger
       - /data/retina-node/blah2/save:/opt/blah2/save
