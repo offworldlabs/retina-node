@@ -14,7 +14,7 @@ services:
 
   blah2:
     restart: always
-    image: ghcr.io/offworldlabs/blah2:v0.2.9
+    image: ghcr.io/offworldlabs/blah2:v0.3.0
     tty: true
     depends_on:
       config-merger:
@@ -31,9 +31,6 @@ services:
       - /dev/bus/usb:/dev/bus/usb:rw
       - /usr/local/lib/libsdrplay_api.so.3.15:/usr/local/lib/libsdrplay_api.so.3:ro
       - /data/retina-node/blah2/test:/opt/blah2/test
-
-      - /data/retina-node/blah2/script/sdrplay-restart.sh:/opt/blah2/sdrplay-restart.sh #@TODO - can we bake this in?
-
     network_mode: host
     pid: "host"
     privileged: true
@@ -43,7 +40,7 @@ services:
 
   blah2_web:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-web:v0.2.9
+    image: ghcr.io/offworldlabs/blah2-web:v0.3.0
     ports:
       - 49152:80
     networks:
@@ -52,7 +49,7 @@ services:
 
   blah2_api:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-api:v0.2.9
+    image: ghcr.io/offworldlabs/blah2-api:v0.3.0
     depends_on:
       config-merger:
         condition: service_completed_successfully
@@ -65,7 +62,7 @@ services:
 
   blah2_host:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-host:v0.2.9
+    image: ghcr.io/offworldlabs/blah2-host:v0.3.0
     ports:
       - "8080:80"
     networks:
