@@ -95,10 +95,3 @@ save:
   detection: false
   timing: false
   path: "/opt/blah2/save/"
-
-# tar1090-node configuration
-# Note: tar1090 uses location.rx for receiver position (no separate tar1090.location needed)
-tar1090:
-  adsb_source: "192.168.8.183,30005,beast_in"  # External ADS-B feed (IP,PORT,PROTOCOL)
-  adsblol_fallback: true
-  adsblol_radius: 40

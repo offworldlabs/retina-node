@@ -4,16 +4,12 @@
 # Simple mode (dev testing):
 #   docker compose up -d
 #
-# Full mode (with GUI + config-merger):
-#   docker compose --profile full up -d
 
 networks:
   blah2:
     driver: bridge
 
 services:
-  # === CORE SERVICES (always run) ===
-
   blah2:
     restart: always
     image: ghcr.io/offworldlabs/blah2:${BLAH2_TAG:-dev}
@@ -103,20 +99,3 @@ services:
     container_name: adsb2dd
     environment:
       - TZ=UTC
-
-  # === FULL MODE (--profile full) ===
-  # Runs config-merger to generate config.yml from user.yml
-
-  config-merger:
-    profiles: ["full"]
-    restart: "no"
-    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_TAG:-v0.3.2}
-    command:
-      - python3
-      - /usr/local/bin/merge_config.py
-      - /config/defaults
-      - /app/config/user.yml
-      - /app/config/config.yml
-    volumes:
-      - ${CONFIG_PATH:-./config}:/app/config
-    container_name: config-merger
