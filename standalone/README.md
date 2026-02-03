@@ -48,13 +48,13 @@ sudo git clone --branch v0.3.3 https://github.com/offworldlabs/retina-node.git /
 cd /opt/retina-standalone/standalone
 
 # Edit your location (for ADS-B map)
-nano .env
+sudo nano .env
 
 # Edit blah2 config (SDR, frequencies, location)
-nano config/config.yml
+sudo nano config/config.yml
 
 # Start
-docker compose up -d
+sudo docker compose up -d
 ```
 
 ## Web Interfaces
@@ -82,14 +82,14 @@ For testing container changes without Mender:
 
 3. **Stop, pull and restart**:
    ```bash
-   docker compose down
-   docker compose pull
-   docker compose up -d
+   sudo docker compose down
+   sudo docker compose pull
+   sudo docker compose up -d
    ```
 
 4. **Check logs**:
    ```bash
-   docker logs -f blah2
+   sudo docker logs -f blah2
    ```
 
 Use `dev` tag for latest builds, or pin to a specific version for stability.
@@ -154,31 +154,31 @@ See [blah2 documentation](https://github.com/30hours/blah2) for full config opti
 
 ```bash
 # Start all services
-docker compose up -d
+sudo docker compose up -d
 
 # Stop all services
-docker compose down
+sudo docker compose down
 
 # View logs
-docker logs blah2 --tail 50
-docker logs tar1090 --tail 50
+sudo docker logs blah2 --tail 50
+sudo docker logs tar1090 --tail 50
 
 # Restart after config change
-docker compose restart blah2
+sudo docker compose restart blah2
 
 # Update to latest images
-docker compose pull
-docker compose up -d
+sudo docker compose pull
+sudo docker compose up -d
 ```
 
 ## Updating
 
 ```bash
 cd /opt/retina-standalone
-git pull                      # Get latest compose/config
+sudo git pull                 # Get latest compose/config
 cd standalone
-docker compose pull           # Pull new images
-docker compose up -d          # Restart with new images
+sudo docker compose pull           # Pull new images
+sudo docker compose up -d          # Restart with new images
 ```
 
 
