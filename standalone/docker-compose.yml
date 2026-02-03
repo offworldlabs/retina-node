@@ -16,7 +16,7 @@ services:
 
   blah2:
     restart: always
-    image: ghcr.io/offworldlabs/blah2:${BLAH2_TAG:-v0.2.9}
+    image: ghcr.io/offworldlabs/blah2:${BLAH2_TAG:-dev}
     tty: true
     depends_on:
       blah2_api:
@@ -37,7 +37,7 @@ services:
 
   blah2_api:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-api:${BLAH2_TAG:-v0.2.9}
+    image: ghcr.io/offworldlabs/blah2-api:${BLAH2_TAG:-dev}
     volumes:
       - ${CONFIG_PATH:-./config}/config.yml:/usr/src/app/config/config.yml:ro
     network_mode: host
@@ -46,7 +46,7 @@ services:
 
   blah2_web:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-web:${BLAH2_TAG:-v0.2.9}
+    image: ghcr.io/offworldlabs/blah2-web:${BLAH2_TAG:-dev}
     ports:
       - "49152:80"
     networks:
@@ -55,7 +55,7 @@ services:
 
   blah2_host:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-host:${BLAH2_TAG:-v0.2.9}
+    image: ghcr.io/offworldlabs/blah2-host:${BLAH2_TAG:-dev}
     ports:
       - "8080:80"
     networks:
