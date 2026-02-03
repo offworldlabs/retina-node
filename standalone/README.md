@@ -1,6 +1,8 @@
 # Standalone Deployment
 
-Run the retina passive radar stack without owl-os/Mender infrastructure.
+Run the retina passive radar stack without Mender infrastructure (for advanced users, and devs). Owl-os can be used as a base os image (reccomended saves installing system requirements) or any xxx Linux system (not all tested but should work in thoery.)
+
+If you want a managed node as part of the retina-network this is not reccomended,
 
 ## Prerequisites
 
@@ -30,8 +32,8 @@ docker compose up -d
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| blah2 | http://localhost:8080 | Passive radar display |
-| tar1090 | http://localhost:8078 | ADS-B aircraft map |
+| blah2 | http://retina.local:49152/ | Passive radar display |
+| tar1090 | http://retina.local:8078/ | ADS-B aircraft map |
 
 ## Configuration
 
