@@ -35,6 +35,13 @@ TODO: Document system requirements for non-owl-os systems
 > cd /data/mender-app/retina-node/manifests
 > sudo docker compose -p retina-node down
 > ```
+> To switch back to Mender-deployed services later:
+> ```bash
+> cd /opt/retina-standalone/standalone
+> sudo docker compose down
+> cd /data/mender-app/retina-node/manifests
+> sudo docker compose -p retina-node up -d
+> ```
 
 ## Quick Start
 
