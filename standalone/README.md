@@ -1,8 +1,20 @@
 # Standalone Deployment
 
-Run the retina passive radar stack without Mender infrastructure (for advanced users, and devs). Owl-os can be used as a base os image (reccomended saves installing system requirements) or any xxx Linux system (not all tested but should work in thoery.)
+Run the retina passive radar stack without Mender infrastructure (for advanced users and devs).
 
-If you want a managed node as part of the retina-network this is not reccomended,
+Owl-os can be used as a base OS image (recommended - saves installing system requirements) or any Linux system (not all tested but should work in theory).
+
+If you want a managed node as part of the retina-network, this is not recommended.
+
+```
+standalone/
+├── .env                 # Image tags, location settings for tar1090
+├── config/
+│   └── config.yml       # blah2 SDR/frequency config/ location
+├── data/
+│   └── blah2/save/      # Saved detections (created on first run)
+└── docker-compose.yml
+```
 
 ## Prerequisites
 
