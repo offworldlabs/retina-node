@@ -21,7 +21,7 @@ services:
     depends_on:
       blah2_api:
         condition: service_started
-    command: /bin/bash -c "/opt/blah2/sdrplay-restart.sh && /opt/blah2/bin/blah2 /opt/blah2/config/config.yml"
+    command: bash -c "/opt/blah2/sdrplay-restart.sh && /opt/blah2/bin/blah2 -c /opt/blah2/config/config.yml"
     environment:
       - BLAH2_VERBOSE=false
     volumes:
