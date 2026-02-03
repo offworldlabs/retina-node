@@ -1,0 +1,101 @@
+# Standalone deployment for retina-node
+# Target: /opt/retina-standalone/
+#
+# Simple mode (dev testing):
+#   docker compose up -d
+#
+
+networks:
+  blah2:
+    driver: bridge
+
+services:
+  blah2:
+    restart: always
+    image: ghcr.io/offworldlabs/blah2:${BLAH2_TAG:-dev}
+    tty: true
+    depends_on:
+      blah2_api:
+        condition: service_started
+    command: bash -c "/opt/blah2/sdrplay-restart.sh && /opt/blah2/bin/blah2 -c /opt/blah2/config/config.yml"
+    environment:
+      - BLAH2_VERBOSE=false
+    volumes:
+      - ${CONFIG_PATH:-./config}/config.yml:/opt/blah2/config/config.yml:ro
+      - ${DATA_PATH:-./data}/blah2/save:/opt/blah2/save
+      - /dev/shm:/dev/shm:rw
+      - /dev/bus/usb:/dev/bus/usb:rw
+      - /usr/local/lib/libsdrplay_api.so.3.15:/usr/local/lib/libsdrplay_api.so.3:ro
+    network_mode: host
+    pid: "host"
+    privileged: true
+    container_name: blah2
+
+  blah2_api:
+    restart: always
+    image: ghcr.io/offworldlabs/blah2-api:${BLAH2_TAG:-dev}
+    volumes:
+      - ${CONFIG_PATH:-./config}/config.yml:/usr/src/app/config/config.yml:ro
+    network_mode: host
+    command: node server.js /usr/src/app/config/config.yml
+    container_name: blah2-api
+
+  blah2_web:
+    restart: always
+    image: ghcr.io/offworldlabs/blah2-web:${BLAH2_TAG:-dev}
+    ports:
+      - "49152:80"
+    networks:
+      - blah2
+    container_name: blah2-web
+
+  blah2_host:
+    restart: always
+    image: ghcr.io/offworldlabs/blah2-host:${BLAH2_TAG:-dev}
+    ports:
+      - "8080:80"
+    networks:
+      - blah2
+    container_name: blah2-host
+    depends_on:
+      - blah2_web
+      - blah2_api
+
+  tar1090:
+    restart: always
+    image: ghcr.io/offworldlabs/tar1090-node:${TAR1090_TAG:-v0.2.0}
+    container_name: tar1090
+    hostname: tar1090
+    ports:
+      - "8078:80"
+    networks:
+      - blah2
+    environment:
+      - TZ=UTC
+      - READSB_DEVICE_TYPE=none
+      - READSB_NET_ENABLE=true
+      - READSB_NET_CONNECTOR=${READSB_NET_CONNECTOR:-}
+      - READSB_LAT=${RECEIVER_LAT:-0}
+      - READSB_LON=${RECEIVER_LON:-0}
+      - READSB_ALT=${RECEIVER_ALT:-0}
+      - READSB_RX_LOCATION_ACCURACY=2
+      - READSB_STATS_RANGE=true
+      - LAT=${RECEIVER_LAT:-0}
+      - LONG=${RECEIVER_LON:-0}
+      - TAR1090_DEFAULTCENTERLAT=${RECEIVER_LAT:-0}
+      - TAR1090_DEFAULTCENTERLON=${RECEIVER_LON:-0}
+      - ADSBLOL_ENABLED=${ADSBLOL_ENABLED:-false}
+      - RECEIVER_LAT=${RECEIVER_LAT:-0}
+      - RECEIVER_LON=${RECEIVER_LON:-0}
+      - ADSBLOL_RADIUS=${ADSBLOL_RADIUS:-40}
+      - PROXY_PORT=3005
+    tmpfs:
+      - /var/log:size=32M
+
+  adsb2dd:
+    restart: always
+    image: ghcr.io/offworldlabs/adsb2dd:${ADSB2DD_TAG:-v0.1.3}
+    network_mode: host
+    container_name: adsb2dd
+    environment:
+      - TZ=UTC
