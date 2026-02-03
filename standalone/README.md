@@ -115,9 +115,9 @@ Config is split between two files: `.env` for tar1090 and docker compose setting
 # ADSB2DD_TAG=v0.1.3
 
 # --- tar1090 location settings ---
-RECEIVER_LAT=51.5074
-RECEIVER_LON=-0.1278
-RECEIVER_ALT=10
+RECEIVER_LAT=37.7644
+RECEIVER_LON=-122.3954
+RECEIVER_ALT=23
 
 # --- tar1090 ADS-B settings ---
 
@@ -150,9 +150,9 @@ process:
 
 location:
   rx:
-    latitude: 51.5074         # Your receiver location
-    longitude: -0.1278
-    altitude: 10
+    latitude: 37.7644         # Your receiver location
+    longitude: -122.3954
+    altitude: 23
 ```
 
 See [blah2 documentation](https://github.com/30hours/blah2) for full config options.
