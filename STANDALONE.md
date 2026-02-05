@@ -41,7 +41,7 @@ TODO: Document system requirements for non-owl-os systems
 # Clone the repo
 sudo git clone https://github.com/offworldlabs/retina-node.git /opt/retina-standalone
 # Or clone a specific release
-sudo git clone -b v0.3.0 https://github.com/offworldlabs/retina-node.git /opt/retina-standalone
+sudo git clone -b v0.3.4 https://github.com/offworldlabs/retina-node.git /opt/retina-standalone
 cd /opt/retina-standalone
 
 # Set up config
