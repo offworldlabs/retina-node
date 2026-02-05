@@ -1,20 +1,41 @@
+# Retina Node - Passive Radar Stack
+#
+# Works for both standalone and Mender-managed deployments.
+# - Mender (default): Just run `docker compose up -d` - config-merger runs automatically
+# - Standalone: Provide .env with SKIP_CONFIG_MERGER=true and path overrides
+#
+# See .env.example for standalone configuration.
+#
+# Releases: Update the version after :- in each image tag (e.g., :-v0.3.0 → :-v0.4.0)
+#   BLAH2_V, TAR1090_V, ADSB2DD_V, CONFIG_MERGER_V
+
 networks:
-    blah2:
-      driver: bridge #Create network
+  blah2:
+    driver: bridge
 
 services:
 
   config-merger:
     restart: "no"  # Run once and exit
-    image: ghcr.io/offworldlabs/retina-config-merger:v0.3.2
+    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_V:-v0.3.2}
     volumes:
-      - /data/retina-node/config:/data/retina-node/config
-      - /data/mender-app:/data/mender-app
+      - ${CONFIG_DIR:-/data/retina-node/config}:/data/retina-node/config
+      - ${MENDER_APP_DIR:-/data/mender-app}:/data/mender-app
+      - ${MENDER_DATA_DIR:-/data/mender}:/data/mender:ro
     container_name: retina-config-merger
+    # Skip config-merger for standalone deployments (set SKIP_CONFIG_MERGER=true in .env)
+    command: >
+      sh -c "
+        if [ '${SKIP_CONFIG_MERGER:-false}' = 'true' ]; then
+          echo 'Config merger skipped (standalone mode)';
+          exit 0;
+        fi;
+        python3 /usr/local/bin/merge_config.py /config/defaults /data/retina-node/config/user.yml /data/retina-node/config/config.yml
+      "
 
   blah2:
     restart: always
-    image: ghcr.io/offworldlabs/blah2:v0.3.0
+    image: ghcr.io/offworldlabs/blah2:${BLAH2_V:-v0.3.0}
     tty: true
     depends_on:
       config-merger:
@@ -23,48 +44,45 @@ services:
         condition: service_started
     environment:
       - BLAH2_VERBOSE=false
-    volumes: #Persistant storage in /data/
-      - /data/retina-node/config:/opt/blah2/config:ro # Read-only merged config from config-merger
-      - /data/retina-node/blah2/save:/opt/blah2/save
-
+    volumes:
+      - ${CONFIG_DIR:-/data/retina-node/config}:/opt/blah2/config:ro
+      - ${DATA_DIR:-/data/retina-node}/blah2/save:/opt/blah2/save
       - /dev/shm:/dev/shm:rw
       - /dev/bus/usb:/dev/bus/usb:rw
       - /usr/local/lib/libsdrplay_api.so.3.15:/usr/local/lib/libsdrplay_api.so.3:ro
-      - /data/retina-node/blah2/test:/opt/blah2/test
+      - ${DATA_DIR:-/data/retina-node}/blah2/test:/opt/blah2/test
     network_mode: host
     pid: "host"
-    privileged: true
-    # Command: restart SDR -> start app with pre-merged config
+    privileged: true  # Required for USB SDR access
     command: bash -c "/opt/blah2/sdrplay-restart.sh && /opt/blah2/bin/blah2 -c /opt/blah2/config/config.yml"
     container_name: blah2
 
   blah2_web:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-web:v0.3.0
+    image: ghcr.io/offworldlabs/blah2-web:${BLAH2_V:-v0.3.0}
     ports:
-      - 49152:80
+      - "${BLAH2_WEB_PORT:-49152}:80"
     networks:
       - blah2
     container_name: blah2-web
 
   blah2_api:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-api:v0.3.0
+    image: ghcr.io/offworldlabs/blah2-api:${BLAH2_V:-v0.3.0}
     depends_on:
       config-merger:
         condition: service_completed_successfully
     volumes:
-      - /data/retina-node/config:/usr/src/app/config:ro # Read-only merged config from config-merger
+      - ${CONFIG_DIR:-/data/retina-node/config}:/usr/src/app/config:ro
     network_mode: host
-    # Command: start API server with pre-merged config
-    command: bash -c "node server.js /usr/src/app/config/config.yml"
+    command: node server.js /usr/src/app/config/config.yml
     container_name: blah2-api
 
   blah2_host:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-host:v0.3.0
+    image: ghcr.io/offworldlabs/blah2-host:${BLAH2_V:-v0.3.0}
     ports:
-      - "8080:80"
+      - "${BLAH2_HOST_PORT:-8080}:80"
     networks:
       - blah2
     container_name: blah2-host
@@ -72,24 +90,21 @@ services:
       - blah2_web
       - blah2_api
 
-  # NOTE: readsb is now built into tar1090 (docker-tar1090 image includes readsb)
-  # The separate readsb container has been removed
-
   tar1090:
     restart: always
-    image: ghcr.io/offworldlabs/tar1090-node:v0.2.0
+    image: ghcr.io/offworldlabs/tar1090-node:${TAR1090_V:-v0.2.0}
     container_name: tar1090
     hostname: tar1090
     ports:
-      - "8078:80"
+      - "${TAR1090_PORT:-8078}:80"
     networks:
       - blah2
     depends_on:
       config-merger:
         condition: service_completed_successfully
     environment:
-      - TZ=UTC
-      # readsb config (built into docker-tar1090)
+      - TZ=${TZ:-UTC}
+      # readsb config
       - READSB_DEVICE_TYPE=none
       - READSB_NET_ENABLE=true
       - READSB_NET_CONNECTOR=${READSB_NET_CONNECTOR:-}
@@ -114,10 +129,8 @@ services:
 
   adsb2dd:
     restart: always
-    image: ghcr.io/offworldlabs/adsb2dd:v0.1.3
+    image: ghcr.io/offworldlabs/adsb2dd:${ADSB2DD_V:-v0.1.3}
     network_mode: host
     container_name: adsb2dd
     environment:
-      - TZ=UTC
-
-
+      - TZ=${TZ:-UTC}

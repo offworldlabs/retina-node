@@ -22,7 +22,7 @@ standalone/
 
 - Linux system (x86_64 or ARM64)
 - Docker & Docker Compose
-- SDRplay RSPduo with drivers installed
+- SDRplay RSPduo with drivers installed rasp
 - SDRplay API library at `/usr/local/lib/libsdrplay_api.so.3.15`
 
 ## System requirements (if not using owl-os), install:
@@ -33,35 +33,33 @@ TODO: Document system requirements for non-owl-os systems
 > **If running on owl-os with Mender-deployed services**, stop them first:
 > ```bash
 > cd /data/mender-app/retina-node/manifests
-> sudo docker compose -p retina-node down
+> docker compose -p retina-node down
 > ```
 > To switch back to Mender-deployed services later:
 > ```bash
-> cd /opt/retina-standalone/standalone
-> sudo docker compose down
+> cd ~/retina-node  # or wherever you cloned
+> docker compose down
 > cd /data/mender-app/retina-node/manifests
-> sudo docker compose -p retina-node up -d
+> docker compose -p retina-node up -d
 > ```
 
 ## Quick Start
 
 ```bash
-# Clone the repo (latest dev)
-sudo git clone https://github.com/offworldlabs/retina-node.git /opt/retina-standalone
+# Clone the repo
+git clone https://github.com/offworldlabs/retina-node.git /opt/retina-standalone
+cd /opt/retina-standalone
 
-# Or clone a stable, specific version
-sudo git clone --branch v0.3.3 https://github.com/offworldlabs/retina-node.git /opt/retina-standalone
+# Set up config
+cp .env.example .env
+cp config/default.yml config/config.yml
 
-cd /opt/retina-standalone/standalone
-
-# Edit your location (for ADS-B map)
-sudo nano .env
-
-# Edit blah2 config (SDR, frequencies, location)
-sudo nano config/config.yml
+# Edit your config
+nano config/config.yml  # Set location, frequency, etc.
+nano .env               # Set location for tar1090 map
 
 # Start
-sudo docker compose up -d
+docker compose up -d
 ```
 
 ## Web Interfaces
@@ -181,11 +179,9 @@ sudo docker compose up -d
 ## Updating
 
 ```bash
-cd /opt/retina-standalone
-sudo git pull                 # Get latest compose/config
-cd standalone
-sudo docker compose pull           # Pull new images
-sudo docker compose up -d          # Restart with new images
+git pull
+docker compose pull
+docker compose up -d
 ```
 
 
