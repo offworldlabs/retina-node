@@ -4,7 +4,7 @@ Orchestrator repository for Retina passive radar nodes. Manages docker-compose c
 
 Deploy to nodes running [owl-os](https://github.com/offworldlabs/owl-os) via the Mender dashboard. See owl-os README for installation instructions.
 
-For development/testing without Mender, see [standalone/](standalone/).
+For development/testing without Mender, see [STANDALONE.md](STANDALONE.md).
 
 ## Web Interfaces
 
