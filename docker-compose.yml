@@ -17,7 +17,7 @@ services:
 
   config-merger:
     restart: "no"  # Run once and exit
-    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_V:-v0.3.2}
+    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_V:-v0.3.3}
     volumes:
       - ${CONFIG_DIR:-/data/retina-node/config}:/data/retina-node/config
       - ${MENDER_APP_DIR:-/data/mender-app}:/data/mender-app
