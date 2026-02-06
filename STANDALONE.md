@@ -25,14 +25,14 @@ TODO: Document system requirements for non-owl-os systems
 > **If running on owl-os with Mender-deployed services**, stop them first:
 > ```bash
 > cd /data/mender-app/retina-node/manifests
-> docker compose -p retina-node down
+> sudo docker compose -p retina-node down
 > ```
 > To switch back to Mender-deployed services later:
 > ```bash
 > cd /opt/retina-standalone
-> docker compose down
+> sudo docker compose down
 > cd /data/mender-app/retina-node/manifests
-> docker compose -p retina-node up -d
+> sudo docker compose -p retina-node up -d
 > ```
 
 ## Quick Start
@@ -45,8 +45,8 @@ sudo git clone -b v0.3.5 https://github.com/offworldlabs/retina-node.git /opt/re
 cd /opt/retina-standalone
 
 # Set up config
-sudo cp .env.example .env
-sudo cp config/default.yml config/config.yml
+sudo cp .env.example .env # Copy exampl .env
+sudo cp config/default.yml config/config.yml # create a local config from defaults
 
 # Edit your config
 sudo nano config/config.yml  # Set location, frequency, etc.
@@ -75,6 +75,11 @@ For testing container changes without Mender:
    - **Dev testing**: Manual dispatch from Actions tab with `dev` tag (can re-run multiple times)
 
 2. **Update `.env`** with the new image version you want to test:
+    ```
+    cd /opt/retina-standalone
+
+    sudo nano .env  
+    ```
    ```bash
    BLAH2_V=dev
    # or a specific version
@@ -88,7 +93,7 @@ For testing container changes without Mender:
    sudo docker compose up -d
    ```
 
-4. **Check status and logs**:
+4. **Check status, versions and logs**:
    ```bash
    sudo docker ps
    sudo docker logs -f blah2
@@ -96,7 +101,7 @@ For testing container changes without Mender:
 
 ## Configuration
 
-Config is split between two files: `.env` for tar1090 and docker compose settings, and `config.yml` for blah2 settings. 
+Config is split between two files: `.env` for tar1090 and docker compose settings, and `config.yml` for blah2 settings. For standalone this should be editied manually.
 
 ### `.env` - Environment Settings
 
