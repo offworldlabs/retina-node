@@ -104,3 +104,4 @@ jobs:
           mender_pat: ${{ secrets.MENDER_SERVER_ACCESS_TOKEN_APP }}
           mender_uri: https://hosted.mender.io
           mender_artifact: artifacts/retina-node-${{ steps.version.outputs.version }}.mender
+          release_name: retina-node
