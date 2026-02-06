@@ -35,7 +35,7 @@ services:
 
   blah2:
     restart: always
-    image: ghcr.io/offworldlabs/blah2:${BLAH2_V:-v0.3.2}
+    image: ghcr.io/offworldlabs/blah2:${BLAH2_V:-v0.3.3}
     tty: true
     depends_on:
       config-merger:
@@ -59,7 +59,7 @@ services:
 
   blah2_web:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-web:${BLAH2_V:-v0.3.2}
+    image: ghcr.io/offworldlabs/blah2-web:${BLAH2_V:-v0.3.3}
     ports:
       - "${BLAH2_WEB_PORT:-49152}:80"
     networks:
@@ -68,7 +68,7 @@ services:
 
   blah2_api:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-api:${BLAH2_V:-v0.3.2}
+    image: ghcr.io/offworldlabs/blah2-api:${BLAH2_V:-v0.3.3}
     depends_on:
       config-merger:
         condition: service_completed_successfully
@@ -80,7 +80,7 @@ services:
 
   blah2_host:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-host:${BLAH2_V:-v0.3.2}
+    image: ghcr.io/offworldlabs/blah2-host:${BLAH2_V:-v0.3.3}
     ports:
       - "${BLAH2_HOST_PORT:-8080}:80"
     networks:
