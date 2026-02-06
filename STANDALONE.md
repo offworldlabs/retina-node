@@ -45,7 +45,7 @@ sudo git clone -b v0.3.5 https://github.com/offworldlabs/retina-node.git /opt/re
 cd /opt/retina-standalone
 
 # Set up config
-sudo cp .env.example .env # Copy exampl .env
+sudo cp .env.example .env # Copy exampe .env
 sudo cp config/default.yml config/config.yml # create a local config from defaults
 
 # Edit your config
@@ -133,29 +133,7 @@ For development, uncomment and edit the image versions in `.env` to quickly swit
 
 ### `config/config.yml` - blah2 Settings
 
-
-```yaml
-capture:
-  type: "RSPduo"              # SDR type
-  fc: 250000000               # Reference signal frequency (Hz)
-  fs: 2000000                 # Sample rate
-
-process:
-  reference:
-    fc: 250000000             # Reference frequency (same as capture.fc)
-  surveillance:
-    fc: 250000000             # Surveillance frequency (can be same or different)
-
-location:
-  rx:
-    latitude: 37.7644         # Your receiver location
-    longitude: -122.3954
-    altitude: 23
-
-  ...
-```
-
-See [blah2-arm documentation](https://github.com/offworldlabs/blah2-arm) for full config options.
+Edit `config/config.yml` to set your location, frequency, and SDR settings. See [blah2-arm documentation](https://github.com/offworldlabs/blah2-arm) for full config options.
 
 ## Commands
 
