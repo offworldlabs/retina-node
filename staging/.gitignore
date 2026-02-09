@@ -1,0 +1,17 @@
+# Generated config
+config/config.yml
+
+# Environment overrides
+.env.staging.local
+
+# Data directories
+data/
+
+# Manifests directory (for Mender simulation)
+manifests/
+
+# Backup files
+*.bak
+
+# Docker volumes
+volumes/

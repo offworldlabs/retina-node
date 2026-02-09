@@ -1,0 +1,33 @@
+# Staging environment configuration
+# Uses radar3.retnode.com location and pulls ADS-B data from production
+
+location:
+  rx:
+    latitude: 33.939182
+    longitude: -84.65191
+    altitude: 320
+    name: "radar3-rx (Wilderness)"
+  tx:
+    latitude: 33.939182
+    longitude: -84.331844
+    altitude: 650
+    name: "WXIA HDTV"
+
+network:
+  node_id: "staging-node"
+
+  # Services communicate via Docker network
+  tracker_forward:
+    enabled: false
+
+truth:
+  adsb:
+    enabled: true
+    tar1090: 'tar1090:80'  # Internal Docker network
+    adsb2dd: 'adsb2dd:49155'  # Internal Docker network
+    delay_tolerance: 2.0
+    doppler_tolerance: 5.0
+
+# tar1090 pulls ADS-B from radar3's public feed
+# This is configured via READSB_NET_CONNECTOR env var in docker-compose
+# Format: radar3.retnode.com,30005,beast_in
