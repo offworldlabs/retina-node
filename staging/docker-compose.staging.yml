@@ -1,0 +1,125 @@
+# Staging Docker Compose - x86_64 host with ARM64 emulation
+# Tests web services, tar1090, and adsb2dd using data from radar3.retnode.com
+# blah2 core disabled (requires SDR hardware)
+
+networks:
+  blah2:
+    driver: bridge
+
+services:
+
+  config-merger:
+    restart: "no"
+    platform: linux/arm64/v8
+    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_V:-v0.3.3}
+    volumes:
+      - ${CONFIG_DIR:-./config}:/data/retina-node/config
+      - ${MENDER_APP_DIR:-./manifests}:/data/mender-app
+      - ${MENDER_DATA_DIR:-./manifests}:/data/mender:ro
+    container_name: retina-config-merger
+    command: >
+      sh -c "
+        if [ '${SKIP_CONFIG_MERGER:-false}' = 'true' ]; then
+          echo 'Config merger skipped (standalone mode)';
+          exit 0;
+        fi;
+        python3 /usr/local/bin/merge_config.py /config/defaults /data/retina-node/config/user.yml /data/retina-node/config/config.yml
+      "
+
+  # blah2 core DISABLED in staging (requires SDR hardware)
+  # To test blah2, use replay mode with IQ files from radar3
+
+  blah2_web:
+    restart: always
+    platform: linux/arm64/v8
+    image: ghcr.io/offworldlabs/blah2-web:${BLAH2_V:-v0.3.4}
+    ports:
+      - "${BLAH2_WEB_PORT:-49152}:80"
+    networks:
+      - blah2
+    container_name: blah2-web
+
+  blah2_api:
+    restart: always
+    platform: linux/arm64/v8
+    image: ghcr.io/offworldlabs/blah2-api:${BLAH2_V:-v0.3.4}
+    depends_on:
+      config-merger:
+        condition: service_completed_successfully
+    volumes:
+      - ${CONFIG_DIR:-./config}:/usr/src/app/config:ro
+    ports:
+      - "3000:3000"  # API port
+      - "3001:3001"  # Map port
+      - "3002:3002"  # Detection port
+      - "3003:3003"  # Track port
+    networks:
+      - blah2
+    command: node server.js /usr/src/app/config/config.yml
+    container_name: blah2-api
+
+  blah2_host:
+    restart: always
+    platform: linux/arm64/v8
+    image: ghcr.io/offworldlabs/blah2-host:${BLAH2_V:-v0.3.4}
+    ports:
+      - "${BLAH2_HOST_PORT:-8080}:80"
+    networks:
+      - blah2
+    container_name: blah2-host
+    depends_on:
+      - blah2_web
+      - blah2_api
+
+  tar1090:
+    restart: always
+    platform: linux/arm64/v8
+    image: ghcr.io/offworldlabs/tar1090-node:${TAR1090_V:-v0.2.0}
+    container_name: tar1090
+    hostname: tar1090
+    ports:
+      - "${TAR1090_PORT:-8078}:80"
+    networks:
+      - blah2
+    depends_on:
+      config-merger:
+        condition: service_completed_successfully
+    environment:
+      - TZ=${TZ:-UTC}
+      # readsb config - pulls from radar3
+      - READSB_DEVICE_TYPE=none
+      - READSB_NET_ENABLE=true
+      - READSB_NET_CONNECTOR=${READSB_NET_CONNECTOR:-radar3.retnode.com,30005,beast_in}
+      - READSB_LAT=${RECEIVER_LAT:-33.939182}
+      - READSB_LON=${RECEIVER_LON:--84.65191}
+      - READSB_ALT=${RECEIVER_ALT:-320}
+      - READSB_RX_LOCATION_ACCURACY=2
+      - READSB_STATS_RANGE=true
+      # tar1090 map config
+      - LAT=${RECEIVER_LAT:-33.939182}
+      - LONG=${RECEIVER_LON:--84.65191}
+      - TAR1090_DEFAULTCENTERLAT=${RECEIVER_LAT:-33.939182}
+      - TAR1090_DEFAULTCENTERLON=${RECEIVER_LON:--84.65191}
+      # adsb.lol proxy config
+      - ADSBLOL_ENABLED=${ADSBLOL_ENABLED:-true}
+      - RECEIVER_LAT=${RECEIVER_LAT:-33.939182}
+      - RECEIVER_LON=${RECEIVER_LON:--84.65191}
+      - ADSBLOL_RADIUS=${ADSBLOL_RADIUS:-40}
+      - PROXY_PORT=3005
+    tmpfs:
+      - /var/log:size=32M
+
+  adsb2dd:
+    restart: always
+    platform: linux/arm64/v8
+    image: ghcr.io/offworldlabs/adsb2dd:${ADSB2DD_V:-v0.1.3}
+    ports:
+      - "49155:49155"  # API port
+    networks:
+      - blah2
+    depends_on:
+      - tar1090
+    container_name: adsb2dd
+    environment:
+      - TZ=${TZ:-UTC}
+      # adsb2dd will read from tar1090 on the same network
