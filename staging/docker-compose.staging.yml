@@ -5,6 +5,9 @@
 networks:
   blah2:
     driver: bridge
+  caddy:
+    external: true
+    name: apps_app_network
 
 services:
 
@@ -37,6 +40,7 @@ services:
       - "${BLAH2_WEB_PORT:-49152}:80"
     networks:
       - blah2
+      - caddy
     container_name: blah2-web
 
   blah2_api:
@@ -55,6 +59,7 @@ services:
       - "3003:3003"  # Track port
     networks:
       - blah2
+      - caddy
     command: node server.js /usr/src/app/config/config.yml
     container_name: blah2-api
 
