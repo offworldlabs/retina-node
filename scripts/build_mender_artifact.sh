@@ -116,8 +116,18 @@ while IFS= read -r image; do
   [ -n "$image" ] && APP_GEN_ARGS+=(--image "$image")
 done <<< "$IMAGES"
 
-# Run app-gen
-app-gen "${APP_GEN_ARGS[@]}" -- "${SOFTWARE_ARGS[@]}"
+# Embed Mender state scripts in the artifact (for update status tracking).
+# Rootfs scripts only cover Download_Enter; Artifact-prefixed scripts must be
+# embedded in the .mender file to fire during install/commit/failure states.
+SCRIPT_DIR="$(dirname "$0")/mender-state-scripts"
+SCRIPT_ARGS=(
+  --script "${SCRIPT_DIR}/ArtifactInstall_Enter_00_retina_state"
+  --script "${SCRIPT_DIR}/ArtifactCommit_Leave_00_retina_state"
+  --script "${SCRIPT_DIR}/ArtifactFailure_Enter_00_retina_state"
+)
+
+# Run app-gen (-- passes remaining args through to mender-artifact)
+app-gen "${APP_GEN_ARGS[@]}" -- "${SOFTWARE_ARGS[@]}" "${SCRIPT_ARGS[@]}"
 
 # Validate artifact
 mender-artifact validate "${ARTIFACT_OUT}" || {
