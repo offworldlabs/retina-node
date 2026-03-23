@@ -10,19 +10,19 @@ For development/testing without Mender, see [STANDALONE.md](STANDALONE.md).
 
 | Service | Port | URL | Description |
 |---------|------|-----|-------------|
-| retina-gui | 80 | `http://retina.local` | Node management, SSH keys, service links |
-| blah2 | 49152 | `http://retina.local:49152` | Passive radar UI |
-| tar1090 | 8078 | `http://retina.local:8078` | ADS-B aircraft map |
-| adsb2dd | 49155 | `http://retina.local:49155` | Delay-Doppler truth overlay |
+| retina-gui | 80 | `http://owl.local` | Node management, SSH keys, service links |
+| blah2 | 49152 | `http://owl.local:49152` | Passive radar UI |
+| tar1090 | 8078 | `http://owl.local:8078` | ADS-B aircraft map |
+| adsb2dd | 49155 | `http://owl.local:49155` | Delay-Doppler truth overlay |
 
 ## SSH Access
 
-Add your SSH public key via the web GUI at `http://retina.local`:
+Add your SSH public key via the web GUI at `http://owl.local`:
 
 1. On your computer, copy your public key: `cat ~/.ssh/id_ed25519.pub`
-2. Open `http://retina.local` in a browser
+2. Open `http://owl.local` in a browser
 3. Paste the key and click "Add Key"
-4. SSH in: `ssh node@retina.local`
+4. SSH in: `ssh node@owl.local`
 
 Keys persist across reboots and OTA updates.
 

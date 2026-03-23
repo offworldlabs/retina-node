@@ -60,11 +60,11 @@ sudo docker compose up -d
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| blah2 | http://retina.local:49152/ | Passive radar display |
-| tar1090 | http://retina.local:8078/ | ADS-B aircraft map |
-| adsb2dd | http://retina.local:49155/ | Delay-Doppler truth overlay |
+| blah2 | http://owl.local:49152/ | Passive radar display |
+| tar1090 | http://owl.local:8078/ | ADS-B aircraft map |
+| adsb2dd | http://owl.local:49155/ | Delay-Doppler truth overlay |
 
-Note: retina-gui (http://retina.local/) is not fully supported when running standalone (yet), config is not editable via the GUI and should be done manually.
+Note: retina-gui (http://owl.local/) is not fully supported when running standalone (yet), config is not editable via the GUI and should be done manually.
 
 ## Development Workflow
 
