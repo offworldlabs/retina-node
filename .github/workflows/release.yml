@@ -29,15 +29,18 @@ jobs:
       - name: Install Mender tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y skopeo
+          sudo apt-get install -y skopeo curl gnupg apt-transport-https ca-certificates
 
-          # Install mender-artifact
-          wget https://downloads.mender.io/mender-artifact/4.4.0/linux/mender-artifact
-          chmod +x mender-artifact
-          sudo mv mender-artifact /usr/local/bin/
+          # Add Mender APT repo and install mender-artifact
+          curl -fsSL https://downloads.mender.io/repos/debian/gpg | sudo tee /etc/apt/trusted.gpg.d/mender.asc
+          echo "deb [arch=$(dpkg --print-architecture)] https://downloads.mender.io/repos/workstation-tools debian/bookworm/stable main" \
+            | sudo tee /etc/apt/sources.list.d/mender.list
+          sudo apt-get update
+          sudo apt-get install -y mender-artifact
 
           # Install gen_docker-compose
-          wget https://raw.githubusercontent.com/mendersoftware/mender-container-modules/1.0.0/src/gen_docker-compose
+          curl -fsSL https://raw.githubusercontent.com/mendersoftware/mender-container-modules/1.0.0/src/gen_docker-compose \
+            -o gen_docker-compose
           chmod +x gen_docker-compose
           sudo mv gen_docker-compose /usr/local/bin/
 
