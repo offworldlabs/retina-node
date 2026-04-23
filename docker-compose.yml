@@ -17,7 +17,7 @@ services:
 
   config-merger:
     restart: "no"  # Run once and exit
-    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_V:-v0.3.15}
+    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_V:-v0.3.16}
     volumes:
       - ${CONFIG_DIR:-/data/retina-node/config}:/data/retina-node/config
       - ${MENDER_COMPOSE_DIR:-/data/mender-docker-compose}:/data/mender-docker-compose
