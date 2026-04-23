@@ -51,9 +51,15 @@ echo "Building retina-node artifact ${VERSION}"
 
 mkdir -p "${MANIFEST_DIR}" artifacts
 
-# Resolve ${VAR:-default} patterns to their defaults — gen_docker-compose uses raw sed
-# to extract image names and cannot handle unresolved shell variables.
-sed 's/\${\([A-Za-z0-9_]*\):-\([^}]*\)}/\2/g' "${COMPOSE_FILE}" > "${MANIFEST_DIR}/docker-compose.yaml"
+# Resolve only image version variables — gen_docker-compose uses raw sed to extract
+# image names and cannot handle unresolved shell variables. Only resolve image tag
+# vars so runtime vars (ADSBLOL_ENABLED, RECEIVER_LAT, etc.) remain as variable
+# references and are resolved from .env at deploy time.
+sed -e 's/\${BLAH2_V:-\([^}]*\)}/\1/g' \
+    -e 's/\${TAR1090_V:-\([^}]*\)}/\1/g' \
+    -e 's/\${ADSB2DD_V:-\([^}]*\)}/\1/g' \
+    -e 's/\${CONFIG_MERGER_V:-\([^}]*\)}/\1/g' \
+    "${COMPOSE_FILE}" > "${MANIFEST_DIR}/docker-compose.yaml"
 
 SCRIPT_DIR="$(dirname "$0")/mender-state-scripts"
 
