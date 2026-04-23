@@ -51,8 +51,9 @@ echo "Building retina-node artifact ${VERSION}"
 
 mkdir -p "${MANIFEST_DIR}" artifacts
 
-# Copy compose file to manifest dir
-cp "${COMPOSE_FILE}" "${MANIFEST_DIR}/docker-compose.yaml"
+# Resolve ${VAR:-default} patterns to their defaults — gen_docker-compose uses raw sed
+# to extract image names and cannot handle unresolved shell variables.
+sed 's/\${\([A-Za-z_]*\):-\([^}]*\)}/\2/g' "${COMPOSE_FILE}" > "${MANIFEST_DIR}/docker-compose.yaml"
 
 SCRIPT_DIR="$(dirname "$0")/mender-state-scripts"
 
