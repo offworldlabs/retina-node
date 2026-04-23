@@ -9,9 +9,6 @@ on:
       version:
         description: "Release version (e.g., v1.0.0, dev)"
         required: true
-      previous_version:
-        description: "Previous version for delta updates (optional)"
-        required: false
 
 jobs:
   build-config-merger:
@@ -31,39 +28,32 @@ jobs:
 
       - name: Install Mender tools
         run: |
-          # Install xdelta3 for delta updates
           sudo apt-get update
-          sudo apt-get install -y xdelta3
-
-          # Install OpenSSL 1.1 for mender-artifact compatibility
-          wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
-          sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+          sudo apt-get install -y skopeo
 
           # Install mender-artifact
-          wget https://downloads.mender.io/mender-artifact/3.11.2/linux/mender-artifact
+          wget https://downloads.mender.io/mender-artifact/4.4.0/linux/mender-artifact
           chmod +x mender-artifact
           sudo mv mender-artifact /usr/local/bin/
 
-          # Install app-gen
-          wget https://raw.githubusercontent.com/mendersoftware/app-update-module/1.1.0/gen/app-gen
-          chmod +x app-gen
-          sudo mv app-gen /usr/local/bin/
+          # Install gen_docker-compose
+          wget https://raw.githubusercontent.com/mendersoftware/mender-container-modules/1.0.0/src/gen_docker-compose
+          chmod +x gen_docker-compose
+          sudo mv gen_docker-compose /usr/local/bin/
 
       - name: Set version
         id: version
         run: |
           if [ "${{ github.event_name }}" == "push" ]; then
             echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-            echo "prev_version=" >> $GITHUB_OUTPUT
           else
             echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
-            echo "prev_version=${{ inputs.previous_version }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Build Mender artifact
         run: |
           chmod +x scripts/build_mender_artifact.sh
-          ./scripts/build_mender_artifact.sh "${{ steps.version.outputs.version }}" "${{ steps.version.outputs.prev_version }}"
+          ./scripts/build_mender_artifact.sh "${{ steps.version.outputs.version }}"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -83,9 +73,6 @@ jobs:
           echo "Artifact: \`artifacts/retina-node-${VERSION}.mender\`" >> $GITHUB_STEP_SUMMARY
           SIZE=$(jq -r '.artifact_size_mb' artifacts/retina-node-${VERSION}.json)
           echo "Size: ${SIZE}MB" >> $GITHUB_STEP_SUMMARY
-          if [ -n "${{ steps.version.outputs.prev_version }}" ]; then
-            echo "Delta: ${{ steps.version.outputs.prev_version }} → ${VERSION}" >> $GITHUB_STEP_SUMMARY
-          fi
 
       - name: Upload to GitHub Release
         if: github.event_name == 'push'

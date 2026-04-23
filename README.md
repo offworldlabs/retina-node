@@ -40,7 +40,7 @@ sudo docker logs <container-name>
 
 **Restart / update config**
 ```bash
-cd /data/mender-app/retina-node/manifests
+cd /data/mender-docker-compose/current/manifests
 sudo docker compose -p retina-node run --rm config-merger
 sudo docker compose -p retina-node up -d --force-recreate
 ```
@@ -82,7 +82,7 @@ Later files override earlier ones.
 sudo nano /data/retina-node/config/user.yml
 
 # 2. Regenerate .env and restart services
-cd /data/mender-app/retina-node/manifests
+cd /data/mender-docker-compose/current/manifests
 sudo docker compose -p retina-node run --rm config-merger
 sudo docker compose -p retina-node up -d --force-recreate
 
@@ -95,7 +95,7 @@ cat /data/retina-node/config/config.yml
 After initial Mender deployment, run config-merger and restart to apply config:
 
 ```bash
-cd /data/mender-app/retina-node/manifests
+cd /data/mender-docker-compose/current/manifests
 sudo docker compose -p retina-node run --rm config-merger
 sudo docker compose -p retina-node up -d --force-recreate
 ```
