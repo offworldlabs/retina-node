@@ -24,14 +24,14 @@ TODO: Document system requirements for non-owl-os systems
 > [!WARNING]
 > **If running on owl-os with Mender-deployed services**, stop them first:
 > ```bash
-> cd /data/mender-app/retina-node/manifests
+> cd /data/mender-docker-compose/current/manifests
 > sudo docker compose -p retina-node down
 > ```
 > To switch back to Mender-deployed services later:
 > ```bash
 > cd /opt/retina-standalone
 > sudo docker compose down
-> cd /data/mender-app/retina-node/manifests
+> cd /data/mender-docker-compose/current/manifests
 > sudo docker compose -p retina-node up -d
 > ```
 

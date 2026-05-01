@@ -88,9 +88,9 @@ def generate_env_file(config, output_dir):
     print("tar1090 .env generated successfully!")
 
     # Copy .env to Mender compose directories for variable substitution
-    # Mender creates: retina-node (current) and retina-node-last (for rollback)
-    for suffix in ['', '-last']:
-        manifests_dir = f'/data/mender-app/retina-node{suffix}/manifests'
+    # mender-docker-compose uses current/ (active) and new/ (staging during update)
+    for slot in ['current', 'new']:
+        manifests_dir = f'/data/mender-docker-compose/{slot}/manifests'
         env_dest = os.path.join(manifests_dir, '.env')
         try:
             if os.path.isdir(manifests_dir):
