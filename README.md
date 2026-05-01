@@ -100,8 +100,7 @@ sudo docker compose -p retina-node run --rm config-merger
 sudo docker compose -p retina-node up -d --force-recreate
 ```
 
-**Why restart is needed:** Docker Compose reads environment variables from `.env` at container start time, not when the file changes. Config-merger generates `.env` with location and ADS-B settings, but services that started before this file existed won't have the correct values. The restart ensures all services pick up the generated configuration. This will no longer be needed once config editing is added to retina-gui.
-
+**Why restart is needed:** Docker Compose reads environment variables from `.env` at container start time, not when the file changes. Config-merger generates `.env` with location and ADS-B settings, but services that started before this file existed won't have the correct values. The restart ensures all services pick up the generated configuration. This is not needed if using the OWL-OS set-up wizard.
 
 ### Editing Default/Forced Config
 
