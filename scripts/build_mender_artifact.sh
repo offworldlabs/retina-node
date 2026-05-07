@@ -73,6 +73,7 @@ gen_docker-compose \
     --output-path "${ARTIFACT_OUT}" \
     -- \
     --software-filesystem data-docker \
+    --clears-provides "rootfs-image.retina-node.version" \
     --script "${SCRIPT_DIR}/ArtifactInstall_Enter_00_retina_state" \
     --script "${SCRIPT_DIR}/ArtifactCommit_Leave_00_retina_state" \
     --script "${SCRIPT_DIR}/ArtifactFailure_Enter_00_retina_state"
