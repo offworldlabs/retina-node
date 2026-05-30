@@ -30,13 +30,17 @@ services:
       - /usr/local/lib/libsdrplay_api.so.3.15:/usr/local/lib/libsdrplay_api.so.3:ro
       - /data/retina-node/blah2/test:/opt/blah2/test
 
-      - /data/retina-node/blah2/script/sdrplay-restart.sh:/opt/blah2/sdrplay-restart.sh #@TODO - can we bake this in?
-
     network_mode: host
     pid: "host"
     privileged: true
-    # Command: restart SDR -> start app with pre-merged config
-    command: bash -c "/opt/blah2/sdrplay-restart.sh && /opt/blah2/bin/blah2 -c /opt/blah2/config/config.yml"
+    # Command: restart SDRplay services -> start app with pre-merged config
+    command: >
+      bash -c "
+        echo 'Restarting SDRplay services...' &&
+        pkill -9 -x blah2 2>/dev/null || true &&
+        pkill -9 -x sdrplay_apiService 2>/dev/null || true &&
+        /opt/blah2/bin/blah2 -c /opt/blah2/config/config.yml
+      "
     container_name: blah2
 
   blah2_web:
