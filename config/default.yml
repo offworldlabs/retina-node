@@ -57,7 +57,13 @@ network:
     iqdata: 4002
     config: 4003
 
-  node_id: "ret7dd2cb0d"
+  node_id: "ret000000000"
+
+  # Forward detections to external tracker container
+  tracker_forward:
+    enabled: false
+    host: 'blah2_tracker'
+    port: 3012
 
 truth:
   adsb:
@@ -73,29 +79,26 @@ truth:
 
 location:
   rx:
-    latitude: 37.7644
-    longitude: -122.3954
-    altitude: 23
-    name: "150 Mississippi"
+    latitude: 51.4769
+    longitude: -0.0005
+    altitude: 48
+    name: "Greenwich Observatory"
   tx:
-    latitude: 37.49917
-    longitude: -121.87222
-    altitude: 783
-    name: "KSCZ-LD"
+    latitude: 51.4244
+    longitude: -0.0753
+    altitude: 219
+    name: "Crystal Palace"
 
 save:
   iq: false
   map: false
-  detection: true
+  detection: false
   timing: false
-  path: "/blah2/save/"
+  path: "/opt/blah2/save/"
 
 # tar1090-node configuration
+# Note: tar1090 uses location.rx for receiver position (no separate tar1090.location needed)
 tar1090:
   adsb_source: "192.168.8.183,30005,beast_in"  # External ADS-B feed (IP,PORT,PROTOCOL)
   adsblol_fallback: true
   adsblol_radius: 40
-  location:
-    latitude: -34.9192
-    longitude: 138.6027
-    altitude: 110

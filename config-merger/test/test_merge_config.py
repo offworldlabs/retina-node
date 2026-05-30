@@ -358,15 +358,15 @@ class TestConfigMerge(unittest.TestCase):
         with open(env_path, 'r') as f:
             env_content = f.read()
 
-        # Check expected values from default.yml
-        self.assertIn('RECEIVER_LAT=-34.9192', env_content)
-        self.assertIn('RECEIVER_LON=138.6027', env_content)
-        self.assertIn('RECEIVER_ALT=110', env_content)
+        # Check expected values from default.yml (San Francisco location)
+        self.assertIn('RECEIVER_LAT=37.7644', env_content)
+        self.assertIn('RECEIVER_LON=-122.3954', env_content)
+        self.assertIn('RECEIVER_ALT=23', env_content)
         self.assertIn('ADSBLOL_ENABLED=true', env_content)
         self.assertIn('ADSBLOL_RADIUS=40', env_content)
 
     def test_tar1090_env_with_adsb_source(self):
-        """Test that ADSB_SOURCE is included in .env when configured"""
+        """Test that READSB_NET_CONNECTOR is included in .env when configured"""
         default_config = {
             'tar1090': {
                 'adsb_source': '192.168.8.183,30005,beast_in',
@@ -384,17 +384,17 @@ class TestConfigMerge(unittest.TestCase):
 
         self.run_merge()
 
-        # Check tar1090.env contains ADSB_SOURCE
+        # Check tar1090.env contains READSB_NET_CONNECTOR
         env_path = os.path.join(self.config_dir, 'tar1090.env')
         self.assertTrue(os.path.exists(env_path))
 
         with open(env_path, 'r') as f:
             env_content = f.read()
 
-        self.assertIn('ADSB_SOURCE=192.168.8.183,30005,beast_in', env_content)
+        self.assertIn('READSB_NET_CONNECTOR=192.168.8.183,30005,beast_in', env_content)
 
     def test_tar1090_env_without_adsb_source(self):
-        """Test that ADSB_SOURCE is omitted when not configured (empty string)"""
+        """Test that READSB_NET_CONNECTOR is omitted when not configured (empty string)"""
         default_config = {
             'tar1090': {
                 'adsb_source': '',  # Empty string - should not be included in .env
@@ -412,14 +412,43 @@ class TestConfigMerge(unittest.TestCase):
 
         self.run_merge()
 
-        # Check tar1090.env does NOT contain ADSB_SOURCE
+        # Check tar1090.env does NOT contain READSB_NET_CONNECTOR
         env_path = os.path.join(self.config_dir, 'tar1090.env')
         self.assertTrue(os.path.exists(env_path))
 
         with open(env_path, 'r') as f:
             env_content = f.read()
 
-        self.assertNotIn('ADSB_SOURCE', env_content)
+        self.assertNotIn('READSB_NET_CONNECTOR', env_content)
+
+    def test_tar1090_env_uses_location_rx(self):
+        """Test that tar1090 uses location.rx for receiver position"""
+        default_config = {
+            'location': {
+                'rx': {
+                    'latitude': 37.7644,
+                    'longitude': -122.3954,
+                    'altitude': 23
+                }
+            },
+            'tar1090': {
+                'adsblol_fallback': True,
+                'adsblol_radius': 40
+            }
+        }
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        env_path = os.path.join(self.config_dir, 'tar1090.env')
+        with open(env_path, 'r') as f:
+            env_content = f.read()
+
+        # Should use location.rx values
+        self.assertIn('RECEIVER_LAT=37.7644', env_content)
+        self.assertIn('RECEIVER_LON=-122.3954', env_content)
+        self.assertIn('RECEIVER_ALT=23', env_content)
 
 if __name__ == '__main__':
     unittest.main()

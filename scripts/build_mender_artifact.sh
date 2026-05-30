@@ -1,43 +1,39 @@
 #!/usr/bin/env bash
-# Generate Mender artifact with bundled Docker images for retina-node
+# Generate Mender docker-compose artifact for retina-node
 set -euo pipefail
 
-# Usage info
 usage() {
   cat <<EOF
-Usage: $0 <version> [previous_version]
+Usage: $0 <version>
 
-Generate a Mender artifact for the retina-node stack with bundled Docker images.
-Uses the docker-compose.yml file as-is (no version templating).
+Generate a Mender docker-compose artifact for the retina-node stack.
+Images are downloaded automatically from registries via skopeo.
 
 Arguments:
-  version           Artifact version (e.g., v1.2.3, dev) - REQUIRED
-  previous_version  Previous version for delta updates - OPTIONAL
+  version       Artifact version (e.g., v1.2.3) - REQUIRED
 
 Environment variables:
-  DEVICE_TYPE       Target device type (default: pi5-v3-arm64)
-  PLATFORM          Target platform (default: linux/arm64/v8)
-  ARTIFACT_NAME     Artifact name (default: retina-node)
-  COMPOSE_FILE      Path to docker-compose file (default: docker-compose.yml)
+  DEVICE_TYPE   Target device type (default: pi5-v3-arm64)
+  ARTIFACT_NAME Artifact name (default: retina-node)
+  COMPOSE_FILE  Path to docker-compose file (default: docker-compose.yml)
+
+Prerequisites:
+  mender-artifact    https://docs.mender.io/downloads/workstation-tools
+  skopeo             https://github.com/containers/skopeo
+  gen_docker-compose curl -O https://raw.githubusercontent.com/mendersoftware/mender-container-modules/1.0.0/src/gen_docker-compose
 
 Examples:
   $0 v1.0.0
-  $0 v1.0.1 v1.0.0  # with delta
 EOF
   exit 1
 }
 
-# Parse arguments
 VERSION=${1:-""}
-PREV_VERSION=${2:-""}
-
 if [ -z "$VERSION" ]; then
   usage
 fi
 
-# Configuration
 DEVICE_TYPE=${DEVICE_TYPE:-pi5-v3-arm64}
-PLATFORM=${PLATFORM:-linux/arm64/v8}
 ARTIFACT_NAME=${ARTIFACT_NAME:-retina-node}
 COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.yml}
 
@@ -46,78 +42,41 @@ ARTIFACT_OUT="artifacts/${ARTIFACT_NAME}-${VERSION}.mender"
 METADATA_OUT="artifacts/${ARTIFACT_NAME}-${VERSION}.json"
 
 # Check prerequisites
-command -v app-gen &>/dev/null || { echo "Error: app-gen not found"; exit 1; }
-command -v mender-artifact &>/dev/null || { echo "Error: mender-artifact not found"; exit 1; }
-command -v docker &>/dev/null || { echo "Error: docker not found"; exit 1; }
-[ -f "$COMPOSE_FILE" ] || { echo "Error: Compose file not found: $COMPOSE_FILE"; exit 1; }
+command -v gen_docker-compose &>/dev/null || { echo "Error: gen_docker-compose not found. See usage for install instructions."; exit 1; }
+command -v mender-artifact &>/dev/null    || { echo "Error: mender-artifact not found."; exit 1; }
+command -v skopeo &>/dev/null             || { echo "Error: skopeo not found."; exit 1; }
+[ -f "$COMPOSE_FILE" ]                    || { echo "Error: Compose file not found: $COMPOSE_FILE"; exit 1; }
 
 echo "Building retina-node artifact ${VERSION}"
-[ -n "$PREV_VERSION" ] && echo "  Delta from ${PREV_VERSION}"
 
-# Create output directories
 mkdir -p "${MANIFEST_DIR}" artifacts
 
-# Copy compose file to manifest directory (no templating)
-cp "${COMPOSE_FILE}" "${MANIFEST_DIR}/docker-compose.yaml"
+# Resolve only image version variables — gen_docker-compose uses raw sed to extract
+# image names and cannot handle unresolved shell variables. Only resolve image tag
+# vars so runtime vars (ADSBLOL_ENABLED, RECEIVER_LAT, etc.) remain as variable
+# references and are resolved from .env at deploy time.
+sed -e 's/\${BLAH2_V:-\([^}]*\)}/\1/g' \
+    -e 's/\${TAR1090_V:-\([^}]*\)}/\1/g' \
+    -e 's/\${ADSB2DD_V:-\([^}]*\)}/\1/g' \
+    -e 's/\${CONFIG_MERGER_V:-\([^}]*\)}/\1/g' \
+    "${COMPOSE_FILE}" > "${MANIFEST_DIR}/docker-compose.yaml"
 
-# Create minimal dummy env file for validation (removed after image extraction)
-# Real tar1090.env is generated at runtime by config-merger
-mkdir -p "${MANIFEST_DIR}/config"
-cat > "${MANIFEST_DIR}/config/tar1090.env" <<'EOF'
-RECEIVER_LAT=0
-RECEIVER_LON=0
-RECEIVER_ALT=0
-ADSBLOL_ENABLED=false
-ADSBLOL_RADIUS=40
-EOF
+SCRIPT_DIR="$(dirname "$0")/mender-state-scripts"
 
-# Temporarily update env_file path for validation
-sed -i.bak 's|/data/retina-node/config/tar1090.env|config/tar1090.env|g' "${MANIFEST_DIR}/docker-compose.yaml"
-
-# Extract image tags from docker-compose.yml
-echo "Extracting images from docker-compose.yaml..."
-IMAGES=$(docker compose -f "${MANIFEST_DIR}/docker-compose.yaml" config --images 2>/dev/null)
-
-# Restore original env_file path and clean up
-mv "${MANIFEST_DIR}/docker-compose.yaml.bak" "${MANIFEST_DIR}/docker-compose.yaml"
-rm -rf "${MANIFEST_DIR}/config"
-
-if [ -z "$IMAGES" ]; then
-  echo "Error: No images found in docker-compose.yaml"
-  exit 1
-fi
-
-echo "Found images:"
-echo "$IMAGES" | sed 's/^/  - /'
-
-# Build app-gen arguments
-APP_GEN_ARGS=(
-  --artifact-name "${ARTIFACT_NAME}-${VERSION}"
-  --device-type "${DEVICE_TYPE}"
-  --platform "${PLATFORM}"
-  --application-name "${ARTIFACT_NAME}"
-  --orchestrator docker-compose
-  --manifests-dir "${MANIFEST_DIR}"
-  --output-path "${ARTIFACT_OUT}"
-)
-
-SOFTWARE_ARGS=(
-  --software-name "${ARTIFACT_NAME}"
-  --software-version "${VERSION}"
-)
-
-# Add images to app-gen arguments
-# For delta updates, we'd need previous image tags 
-if [ -n "$PREV_VERSION" ]; then
-  echo "Warning: Delta updates require manual configuration - performing full update"
-fi
-
-while IFS= read -r image; do
-  [ -n "$image" ] && APP_GEN_ARGS+=(--image "$image")
-done <<< "$IMAGES"
-
-# Run app-gen
-app-gen "${APP_GEN_ARGS[@]}" -- "${SOFTWARE_ARGS[@]}"
+# Build artifact — gen_docker-compose pulls images via skopeo automatically
+gen_docker-compose \
+    --artifact-name "${ARTIFACT_NAME}-${VERSION}" \
+    --device-type "${DEVICE_TYPE}" \
+    --architecture arm64 \
+    --manifests-dir "${MANIFEST_DIR}" \
+    --project-name "${ARTIFACT_NAME}" \
+    --output-path "${ARTIFACT_OUT}" \
+    -- \
+    --software-filesystem data-docker \
+    --clears-provides "rootfs-image.retina-node.version" \
+    --script "${SCRIPT_DIR}/ArtifactInstall_Enter_00_retina_state" \
+    --script "${SCRIPT_DIR}/ArtifactCommit_Leave_00_retina_state" \
+    --script "${SCRIPT_DIR}/ArtifactFailure_Enter_00_retina_state"
 
 # Validate artifact
 mender-artifact validate "${ARTIFACT_OUT}" || {
@@ -129,38 +88,14 @@ mender-artifact validate "${ARTIFACT_OUT}" || {
 SIZE=$(stat -c%s "${ARTIFACT_OUT}" 2>/dev/null || stat -f%z "${ARTIFACT_OUT}")
 SIZE_MB=$((SIZE / 1024 / 1024))
 
-[ "$SIZE" -gt 2147483648 ] && echo "Warning: Large artifact (${SIZE_MB}MB)"
-
-# Build images JSON object for metadata
-IMAGES_JSON=""
-FIRST=true
-while IFS= read -r image; do
-  if [ -n "$image" ]; then
-    # Extract image name (last part before :tag)
-    NAME=$(echo "$image" | sed 's|.*/||' | sed 's|:.*||')
-    if [ "$FIRST" = true ]; then
-      IMAGES_JSON="\"${NAME}\": \"${image}\""
-      FIRST=false
-    else
-      IMAGES_JSON="${IMAGES_JSON},\n    \"${NAME}\": \"${image}\""
-    fi
-  fi
-done <<< "$IMAGES"
-
-# Create metadata
+# Write metadata
 cat > "${METADATA_OUT}" <<EOF
 {
   "stack_version": "${VERSION}",
   "artifact_name": "${ARTIFACT_NAME}-${VERSION}",
-  "previous_version": "${PREV_VERSION:-null}",
   "device_type": "${DEVICE_TYPE}",
-  "platform": "${PLATFORM}",
   "artifact_size_bytes": ${SIZE},
   "artifact_size_mb": ${SIZE_MB},
-  "delta_enabled": false,
-  "images": {
-    $(echo -e "$IMAGES_JSON")
-  },
   "built_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "git_sha": "$(git rev-parse HEAD 2>/dev/null || echo 'unknown')",
   "git_branch": "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')"

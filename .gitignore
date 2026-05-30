@@ -13,5 +13,9 @@ __pycache__/
 .env
 *.local
 
+# Standalone user config (created by cp config/default.yml config/config.yml)
+config/config.yml
+data/
+
 # OS
 .DS_Store
