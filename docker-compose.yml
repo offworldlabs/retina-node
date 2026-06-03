@@ -134,3 +134,12 @@ services:
     container_name: adsb2dd
     environment:
       - TZ=${TZ:-UTC}
+
+  retina-spectrum:
+    restart: always
+    image: ghcr.io/offworldlabs/retina-spectrum:${SPECTRUM_V:-v0.1.0}
+    ports:
+      - "${SPECTRUM_PORT:-3020}:3020"
+    networks:
+      - blah2
+    container_name: retina-spectrum

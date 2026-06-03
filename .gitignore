@@ -8,6 +8,7 @@ __pycache__/
 *.so
 .Python
 *.egg-info/
+.venv/
 
 # Environment
 .env

@@ -14,6 +14,7 @@ For development/testing without Mender, see [STANDALONE.md](STANDALONE.md).
 | blah2 | 49152 | `http://owl.local:49152` | Passive radar UI |
 | tar1090 | 8078 | `http://owl.local:8078` | ADS-B aircraft map |
 | adsb2dd | 49155 | `http://owl.local:49155` | Delay-Doppler truth overlay |
+| retina-spectrum | 3020 | `http://owl.local:3020` | Spectrum analyzer |
 
 ## SSH Access
 
