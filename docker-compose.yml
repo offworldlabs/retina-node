@@ -136,10 +136,15 @@ services:
       - TZ=${TZ:-UTC}
 
   retina-spectrum:
-    restart: always
+    profiles: [spectrum]
+    restart: unless-stopped
     image: ghcr.io/offworldlabs/retina-spectrum:${SPECTRUM_V:-v0.1.0}
-    ports:
-      - "${SPECTRUM_PORT:-3020}:3020"
-    networks:
-      - blah2
+    network_mode: host
+    pid: "host"
+    privileged: true
+    volumes:
+      - /dev/shm:/dev/shm:rw
+      - /dev/bus/usb:/dev/bus/usb:rw
+      - /usr/local/lib/libsdrplay_api.so.3.15:/usr/local/lib/libsdrplay_api.so.3:ro
+    command: bash -c "pkill -9 -f sdrplay_apiService 2>/dev/null || true && sleep 2 && retina-spectrum --web-dir /web"
     container_name: retina-spectrum
