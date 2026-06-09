@@ -137,7 +137,7 @@ services:
 
   retina-spectrum:
     profiles: [spectrum]
-    restart: unless-stopped
+    restart: "no"
     image: ghcr.io/offworldlabs/retina-spectrum:${SPECTRUM_V:-v0.1.0}
     network_mode: host
     pid: "host"
