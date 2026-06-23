@@ -311,6 +311,24 @@ class TestConfigMerge(unittest.TestCase):
         # Defaults should remain for non-overridden values
         self.assertIn('RECEIVER_LON=0', env_content)
 
+    def test_legacy_scalar_gain_reduction_migrated(self):
+        """Test that a legacy scalar gainReduction from user.yml is migrated to a per-tuner pair"""
+        default_config = {
+            'capture': {'device': {'gainReduction': [40, 40]}}
+        }
+        user_config = {
+            'capture': {'device': {'gainReduction': 30}}  # legacy scalar override
+        }
+
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+        self.write_yaml(os.path.join(self.config_dir, 'user.yml'), user_config)
+
+        output_yml = self.run_merge()
+        output = self.read_yaml(output_yml)
+
+        self.assertEqual(output['capture']['device']['gainReduction'], [30, 30])
+
     def test_actual_config_files(self):
         """Test merge with actual config files from retina-node repo"""
         import subprocess

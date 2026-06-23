@@ -100,6 +100,23 @@ def generate_env_file(config, output_dir):
             print(f"Note: Could not copy to {env_dest}: {e}")
 
 
+def migrate_gain_reduction(config):
+    """Convert legacy scalar gainReduction (pre-per-tuner) to [reference, surveillance] pair.
+
+    Older user.yml overlays persisted on devices may still carry a single scalar value
+    for capture.device.gainReduction, which would otherwise clobber the new default.yml's
+    list value during merge and break blah2's per-tuner RSPduo gain support.
+    """
+    try:
+        gain = config['capture']['device']['gainReduction']
+    except (KeyError, TypeError):
+        return
+
+    if isinstance(gain, (int, float)):
+        print(f"Migrating legacy scalar gainReduction ({gain}) to per-tuner pair [{gain}, {gain}]")
+        config['capture']['device']['gainReduction'] = [gain, gain]
+
+
 def ensure_node_id(user_config_path):
     """Add/update node_id in user config from Mender device identity"""
     try:
@@ -210,6 +227,9 @@ def main():
                 print("Applying forced overrides...")
                 merge(config, forced)
         
+        # Migrate legacy field formats forward (e.g. scalar -> per-tuner gainReduction)
+        migrate_gain_reduction(config)
+
         # Write merged config to output
         print(f"Writing merged config to {output_config_path}")
         os.makedirs(os.path.dirname(output_config_path), exist_ok=True)
