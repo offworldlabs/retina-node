@@ -7,7 +7,7 @@
 # See .env.example for standalone configuration.
 #
 # Releases: Update the version after :- in each image tag (e.g., :-v0.3.0 → :-v0.4.0)
-#   BLAH2_V, TAR1090_V, ADSB2DD_V, CONFIG_MERGER_V
+#   BLAH2_V, TAR1090_V, ADSB2DD_V, CONFIG_MERGER_V, RETINA_TRACKER_V
 
 networks:
   blah2:
@@ -150,3 +150,19 @@ services:
       - /usr/local/lib/libsdrplay_api.so.3.15:/usr/local/lib/libsdrplay_api.so.3:ro
     command: bash -c "pkill -9 -f sdrplay_apiService 2>/dev/null || true && sleep 2 && retina-spectrum --web-dir /web"
     container_name: retina-spectrum
+
+  retina-tracker:
+    restart: always
+    image: ghcr.io/offworldlabs/retina-tracker:${RETINA_TRACKER_V:-v0.1.0}
+    network_mode: host
+    # --tcp-host 127.0.0.1 (not the image's 0.0.0.0 default): network_mode
+    # host means 0.0.0.0 would bind the real host interface, exposing the
+    # ingest port to the LAN. retina-gui is always colocated on this same
+    # host, so loopback-only is sufficient.
+    command: >
+      python -m retina_tracker.track_detections
+      --tcp --tcp-host 127.0.0.1 --tcp-port 30100
+      -s /app/output/events.jsonl
+    volumes:
+      - ${DATA_DIR:-/data/retina-node}/retina-tracker/output:/app/output
+    container_name: retina-tracker
