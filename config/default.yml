@@ -102,3 +102,12 @@ tar1090:
   adsb_source: "192.168.8.183,30005,beast_in"  # External ADS-B feed (IP,PORT,PROTOCOL)
   adsblol_fallback: true
   adsblol_radius: 40
+
+# retina-tracker sidecar (github.com/offworldlabs/retina-tracker) config.
+# Unrelated to process.tracker above, which is blah2's own built-in tracker.
+retina_tracker:
+  # dB. Detections below this are discarded before tracking even begins -
+  # too high and the tracker silently never confirms a track no matter how
+  # good the search geometry is. Tune to this node's real noise floor
+  # (compare against SNR values from blah2_api's /api/detection).
+  min_snr: 7.0

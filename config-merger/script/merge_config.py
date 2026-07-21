@@ -6,6 +6,8 @@ Designed to be run in both blah2 and blah2-api containers with baked-in configs.
 Merges default.yml + user.yml + forced.yml into config.yml.
 Also syncs the node_id field in user.yml from Mender device identity (/data/mender/node_id).
 Generates tar1090.env for tar1090-node if the tar1090 section exists in config.
+Generates retina-tracker.yaml for the retina-tracker sidecar if the
+retina_tracker section exists in config.
 
 Takes as inputs:
 1. Defaults directory - holds baked-in default.yml and forced.yml
@@ -20,6 +22,7 @@ Merge order (later overrides earlier):
 Outputs:
   - config.yml: Merged configuration for blah2
   - tar1090.env: Environment variables for tar1090-node
+  - retina-tracker.yaml: Config overrides for the retina-tracker sidecar
 """
 
 import yaml
@@ -98,6 +101,33 @@ def generate_env_file(config, output_dir):
                 print(f"Copied .env to {env_dest}")
         except Exception as e:
             print(f"Note: Could not copy to {env_dest}: {e}")
+
+
+def generate_retina_tracker_config(config, output_dir):
+    """Generate a config file for the retina-tracker sidecar from the merged
+    config's `retina_tracker` section.
+
+    retina_tracker.config.load_config() shallow-merges this per top-level
+    section (`default_config[key].update(loaded[key])`), so only the
+    overridden keys need to be present here - everything else falls back to
+    the package's own built-in defaults. All fields under `retina_tracker`
+    here are assumed to belong to retina-tracker's own `tracker` section;
+    revisit this mapping if fields for its other sections (`process_noise`,
+    `tracklet`, `adsb`, ...) are ever added to default.yml.
+    """
+    if 'retina_tracker' not in config:
+        print("No retina_tracker config found, skipping retina-tracker.yaml generation")
+        return
+
+    output_path = os.path.join(output_dir, 'retina-tracker.yaml')
+    print(f"Writing retina-tracker config to {output_path}")
+
+    # Write to temp file first, then atomic rename
+    temp_path = output_path + '.tmp.' + str(os.getpid())
+    with open(temp_path, 'w') as f:
+        yaml.dump({'tracker': config['retina_tracker']}, f, default_flow_style=False, sort_keys=False)
+    os.rename(temp_path, output_path)
+    print("retina-tracker.yaml generated successfully!")
 
 
 def migrate_gain_reduction(config):
@@ -238,6 +268,9 @@ def main():
 
         # Generate .env file for tar1090-node
         generate_env_file(config, os.path.dirname(output_config_path))
+
+        # Generate config file for the retina-tracker sidecar
+        generate_retina_tracker_config(config, os.path.dirname(output_config_path))
 
         print("Config merge completed successfully!")
         
