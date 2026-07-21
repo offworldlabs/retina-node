@@ -60,6 +60,7 @@ sed -e 's/\${BLAH2_V:-\([^}]*\)}/\1/g' \
     -e 's/\${ADSB2DD_V:-\([^}]*\)}/\1/g' \
     -e 's/\${CONFIG_MERGER_V:-\([^}]*\)}/\1/g' \
     -e 's/\${SPECTRUM_V:-\([^}]*\)}/\1/g' \
+    -e 's/\${RETINA_TRACKER_V:-\([^}]*\)}/\1/g' \
     "${COMPOSE_FILE}" > "${MANIFEST_DIR}/docker-compose.yaml"
 
 SCRIPT_DIR="$(dirname "$0")/mender-state-scripts"
