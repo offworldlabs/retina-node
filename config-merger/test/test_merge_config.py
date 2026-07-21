@@ -369,6 +369,11 @@ class TestConfigMerge(unittest.TestCase):
         self.assertIn('network', output)
         self.assertEqual(output['network']['node_id'], 'test-node')
 
+        # Verify retina-tracker.yaml was generated
+        tracker_yaml_path = os.path.join(self.config_dir, 'retina-tracker.yaml')
+        self.assertTrue(os.path.exists(tracker_yaml_path),
+                         "retina-tracker.yaml should be generated with actual config")
+
         # Verify tar1090.env was generated
         env_path = os.path.join(self.config_dir, 'tar1090.env')
         self.assertTrue(os.path.exists(env_path), "tar1090.env should be generated with actual config")
@@ -467,6 +472,57 @@ class TestConfigMerge(unittest.TestCase):
         self.assertIn('RECEIVER_LAT=37.7644', env_content)
         self.assertIn('RECEIVER_LON=-122.3954', env_content)
         self.assertIn('RECEIVER_ALT=23', env_content)
+
+    def test_retina_tracker_yaml_generated(self):
+        """Test that retina-tracker.yaml is generated when retina_tracker config exists"""
+        default_config = {
+            'process': {'detection': {'pfa': 0.001}},
+            'retina_tracker': {'min_snr': 7.0},
+        }
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        tracker_yaml_path = os.path.join(self.config_dir, 'retina-tracker.yaml')
+        self.assertTrue(os.path.exists(tracker_yaml_path), "retina-tracker.yaml should be generated")
+
+        output = self.read_yaml(tracker_yaml_path)
+        self.assertEqual(output, {'tracker': {'min_snr': 7.0}})
+
+    def test_retina_tracker_yaml_not_generated_without_config(self):
+        """Test that retina-tracker.yaml is not generated when retina_tracker config is missing"""
+        default_config = {
+            'process': {'detection': {'pfa': 0.001}},
+            'network': {'ip': '0.0.0.0'},
+        }
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        tracker_yaml_path = os.path.join(self.config_dir, 'retina-tracker.yaml')
+        self.assertFalse(os.path.exists(tracker_yaml_path),
+                          "retina-tracker.yaml should not be generated without retina_tracker config")
+
+    def test_retina_tracker_yaml_user_override(self):
+        """Test that user config overrides retina_tracker settings in retina-tracker.yaml"""
+        default_config = {
+            'retina_tracker': {'min_snr': 7.0},
+        }
+        user_config = {
+            'retina_tracker': {'min_snr': 4.5},
+        }
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+        self.write_yaml(os.path.join(self.config_dir, 'user.yml'), user_config)
+
+        self.run_merge()
+
+        tracker_yaml_path = os.path.join(self.config_dir, 'retina-tracker.yaml')
+        output = self.read_yaml(tracker_yaml_path)
+        self.assertEqual(output['tracker']['min_snr'], 4.5)
+
 
 if __name__ == '__main__':
     unittest.main()

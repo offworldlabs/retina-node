@@ -155,6 +155,9 @@ services:
     restart: always
     image: ghcr.io/offworldlabs/retina-tracker:${RETINA_TRACKER_V:-v0.1.1}
     network_mode: host
+    depends_on:
+      config-merger:
+        condition: service_completed_successfully
     # --tcp-host 127.0.0.1 (not the image's 0.0.0.0 default): network_mode
     # host means 0.0.0.0 would bind the real host interface, exposing the
     # ingest port to the LAN. retina-gui is always colocated on this same
@@ -163,6 +166,9 @@ services:
       python -m retina_tracker.track_detections
       --tcp --tcp-host 127.0.0.1 --tcp-port 30100
       -s /app/output/events.jsonl
+      -c /config/retina-tracker.yaml
+      --blah2-config /config/config.yml
     volumes:
       - ${DATA_DIR:-/data/retina-node}/retina-tracker/output:/app/output
+      - ${CONFIG_DIR:-/data/retina-node/config}:/config:ro
     container_name: retina-tracker
