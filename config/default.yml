@@ -37,7 +37,11 @@ process:
     minDoppler: 15
     nCentroid: 6
   tracker:
-    enable: true
+    # blah2's own built-in tracker - superseded by the retina-tracker sidecar
+    # (see retina_tracker below), which is what's actually used. Left disabled
+    # so nothing runs its associate/promote loop or feeds its unused
+    # blah2-api /api/tracker endpoint.
+    enable: false
     initiate:
       M: 3
       N: 5
