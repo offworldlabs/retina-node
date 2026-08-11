@@ -18,6 +18,9 @@ jobs:
 
       # Pinned deliberately: an unpinned ruff picks up new rules on release and
       # turns a green branch red without anything in this repo changing.
-      - run: pip install ruff==0.16.2
+      - run: pip install ruff==0.16.2 vulture==2.14
 
       - run: ruff check .
+
+      - name: Dead code
+        run: tools/check-dead-code.sh
