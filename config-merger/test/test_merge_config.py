@@ -5,12 +5,13 @@ Tests for merge_config.py in retina-node config-merger
 Adapted from blah2-arm tests for the simplified 3-argument version.
 """
 
-import unittest
-import tempfile
-import shutil
 import os
-import sys
+import shutil
+import tempfile
+import unittest
+
 import yaml
+
 
 class TestConfigMerge(unittest.TestCase):
 
@@ -33,7 +34,7 @@ class TestConfigMerge(unittest.TestCase):
 
     def read_yaml(self, path):
         """Helper to read YAML file"""
-        with open(path, 'r') as f:
+        with open(path) as f:
             return yaml.safe_load(f)
 
     def run_merge(self):
@@ -226,7 +227,7 @@ class TestConfigMerge(unittest.TestCase):
         self.assertTrue(os.path.exists(env_path), "tar1090.env should be generated")
 
         # Read and verify contents
-        with open(env_path, 'r') as f:
+        with open(env_path) as f:
             env_content = f.read()
 
         self.assertIn('RECEIVER_LAT=-34.9192', env_content)
@@ -269,7 +270,7 @@ class TestConfigMerge(unittest.TestCase):
         self.run_merge()
 
         env_path = os.path.join(self.config_dir, 'tar1090.env')
-        with open(env_path, 'r') as f:
+        with open(env_path) as f:
             env_content = f.read()
 
         self.assertIn('ADSBLOL_ENABLED=false', env_content)
@@ -302,7 +303,7 @@ class TestConfigMerge(unittest.TestCase):
         self.run_merge()
 
         env_path = os.path.join(self.config_dir, 'tar1090.env')
-        with open(env_path, 'r') as f:
+        with open(env_path) as f:
             env_content = f.read()
 
         # User overrides should apply
@@ -378,7 +379,7 @@ class TestConfigMerge(unittest.TestCase):
         env_path = os.path.join(self.config_dir, 'tar1090.env')
         self.assertTrue(os.path.exists(env_path), "tar1090.env should be generated with actual config")
 
-        with open(env_path, 'r') as f:
+        with open(env_path) as f:
             env_content = f.read()
 
         # Check expected values from default.yml (San Francisco location)
@@ -411,7 +412,7 @@ class TestConfigMerge(unittest.TestCase):
         env_path = os.path.join(self.config_dir, 'tar1090.env')
         self.assertTrue(os.path.exists(env_path))
 
-        with open(env_path, 'r') as f:
+        with open(env_path) as f:
             env_content = f.read()
 
         self.assertIn('READSB_NET_CONNECTOR=192.168.8.183,30005,beast_in', env_content)
@@ -439,7 +440,7 @@ class TestConfigMerge(unittest.TestCase):
         env_path = os.path.join(self.config_dir, 'tar1090.env')
         self.assertTrue(os.path.exists(env_path))
 
-        with open(env_path, 'r') as f:
+        with open(env_path) as f:
             env_content = f.read()
 
         self.assertNotIn('READSB_NET_CONNECTOR', env_content)
@@ -465,7 +466,7 @@ class TestConfigMerge(unittest.TestCase):
         self.run_merge()
 
         env_path = os.path.join(self.config_dir, 'tar1090.env')
-        with open(env_path, 'r') as f:
+        with open(env_path) as f:
             env_content = f.read()
 
         # Should use location.rx values
