@@ -1,0 +1,22 @@
+name: lint
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Pinned deliberately: an unpinned ruff picks up new rules on release and
+      # turns a green branch red without anything in this repo changing.
+      - run: pip install ruff==0.16.2
+
+      - run: ruff check .
