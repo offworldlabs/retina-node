@@ -1,0 +1,11 @@
+# The dead-code gate lives in offworldlabs/ops and is pinned here. Do not
+# vendor it back into this repo. See 86cb4jfhz.
+#
+# The ruff-config hook is deliberately absent: this repo's shared ruff standard
+# lives in ruff.toml, and check-ruff-config.py currently reads pyproject.toml
+# only. Tracked as 86cb4jfzk; add the hook once that lands.
+repos:
+  - repo: https://github.com/offworldlabs/ops
+    rev: hooks-v1.0
+    hooks:
+      - id: dead-code
