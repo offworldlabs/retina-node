@@ -382,12 +382,23 @@ class TestConfigMerge(unittest.TestCase):
         with open(env_path) as f:
             env_content = f.read()
 
-        # Check expected values from default.yml (San Francisco location)
-        self.assertIn('RECEIVER_LAT=37.7644', env_content)
-        self.assertIn('RECEIVER_LON=-122.3954', env_content)
-        self.assertIn('RECEIVER_ALT=23', env_content)
-        self.assertIn('ADSBLOL_ENABLED=true', env_content)
-        self.assertIn('ADSBLOL_RADIUS=40', env_content)
+        # Read the expected values from default.yml rather than duplicating
+        # them. This test's purpose is that the merger propagates the real
+        # config into tar1090.env — not that the config holds any particular
+        # site. Hardcoding them meant 64ff0c9, which deliberately replaced the
+        # site-specific defaults with generic placeholders, silently broke this.
+        defaults = self.read_yaml(default_yml_path)
+        rx = defaults['location']['rx']
+        tar1090 = defaults.get('tar1090', {})
+
+        self.assertIn(f"RECEIVER_LAT={rx['latitude']}", env_content)
+        self.assertIn(f"RECEIVER_LON={rx['longitude']}", env_content)
+        self.assertIn(f"RECEIVER_ALT={rx['altitude']}", env_content)
+        self.assertIn(
+            f"ADSBLOL_ENABLED={'true' if tar1090.get('adsblol_fallback') else 'false'}",
+            env_content,
+        )
+        self.assertIn(f"ADSBLOL_RADIUS={tar1090['adsblol_radius']}", env_content)
 
     def test_tar1090_env_with_adsb_source(self):
         """Test that READSB_NET_CONNECTOR is included in .env when configured"""
