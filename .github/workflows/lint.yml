@@ -24,3 +24,14 @@ jobs:
 
       - name: Dead code
         run: pre-commit run --all-files --show-diff-on-failure
+
+      # This repo has no Python packaging, so the config-merger's dependencies
+      # are named here directly. They mirror config-merger/Dockerfile, which
+      # installs the same two unpinned — keep the two in step.
+      - run: pip install pyyaml mergedeep 'pytest>=8.0'
+
+      # Tests live under config-merger/test/, not tests/, so the path is
+      # explicit. This suite had never run in CI until 86cb4jfk7; the failure
+      # it now protects against had gone unnoticed for five months.
+      - name: Tests
+        run: pytest config-merger/test/
