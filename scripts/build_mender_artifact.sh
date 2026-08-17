@@ -61,7 +61,20 @@ sed -e 's/\${BLAH2_V:-\([^}]*\)}/\1/g' \
     -e 's/\${CONFIG_MERGER_V:-\([^}]*\)}/\1/g' \
     -e 's/\${SPECTRUM_V:-\([^}]*\)}/\1/g' \
     -e 's/\${RETINA_TRACKER_V:-\([^}]*\)}/\1/g' \
+    -e 's/\${TELEMETRY_V:-\([^}]*\)}/\1/g' \
     "${COMPOSE_FILE}" > "${MANIFEST_DIR}/docker-compose.yaml"
+
+# Every image tag must be a literal by this point. The list above is by hand,
+# so adding a service to docker-compose.yml without adding its clause here
+# leaves a ${VAR:-default} that skopeo receives as a literal tag — the artifact
+# either fails to build or installs a service that can never start. Cheaper to
+# fail here, with the name of the variable that was missed.
+if unresolved=$(grep -nE '^\s+image:.*\$\{' "${MANIFEST_DIR}/docker-compose.yaml"); then
+    echo "Error: unresolved image tag variables in the generated manifest:" >&2
+    echo "${unresolved}" >&2
+    echo "Add a matching -e clause above for each." >&2
+    exit 1
+fi
 
 SCRIPT_DIR="$(dirname "$0")/mender-state-scripts"
 
