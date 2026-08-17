@@ -172,3 +172,48 @@ services:
       - ${DATA_DIR:-/data/retina-node}/retina-tracker/output:/app/output
       - ${CONFIG_DIR:-/data/retina-node/config}:/config:ro
     container_name: retina-tracker
+
+  retina-telemetry:
+    restart: always
+    image: ghcr.io/offworldlabs/retina-telemetry:${TELEMETRY_V:-v0.1.0}
+    # network_mode: host to reach blah2_api on 127.0.0.1:3000. It binds no
+    # listening ports of its own — every input here is a poll or a file read.
+    network_mode: host
+    # No depends_on, unlike every other service. This is the one that must keep
+    # reporting while the rest of the stack is crash-looping, which is the whole
+    # point of it: gating it on config-merger would leave it dead exactly when
+    # its telemetry matters most. It re-reads its inputs on every cycle, so
+    # config that appears later is picked up without a restart.
+    volumes:
+      # Identity: node_id and device_type. node_id comes from here and nowhere
+      # else — it is never derived — and these files are 0600 root-owned, which
+      # is the only reason this container runs as root.
+      - ${MENDER_DATA_DIR:-/data/mender}:/data/mender:ro
+      - ${CONFIG_DIR:-/data/retina-node/config}:/data/retina-node/config:ro
+      # retina-gui's device state, for the telemetry consent record. Read-only:
+      # retina-gui writes it, we only ever read. Needs retina-gui >= v0.7.0,
+      # which is the first version that persists the three records; without
+      # them a node refuses to register, deliberately.
+      - ${GUI_DATA_DIR:-/data/retina-gui}:/data/retina-gui:ro
+      # The only writable mount. Holds the bearer token at 0600 and the status
+      # document at 0644, under /data so the token survives an OS update.
+      # Losing it means re-registering, which needs an operator to reactivate
+      # the node — the server returns one opaque 403 for every refusal.
+      - ${TELEMETRY_DATA_DIR:-/data/retina-telemetry}:/data/retina-telemetry
+    # No docker socket. blah2 and ADS-B liveness are derived from the detection
+    # poll, which distinguishes down from wedged where container state cannot,
+    # and versions come from the image tags below.
+    environment:
+      # host.py would otherwise default to /data, which is not mounted — only
+      # its subdirectories are — so statvfs would measure this container's
+      # overlay instead of the node's storage and disk_free_mb would be
+      # fiction. /data/mender is mounted, read-only, and on the same filesystem.
+      - DISK_PATH=/data/mender
+      # Image tags, so `versions` in the heartbeat reports something true.
+      # RETINA_NODE_V has no source on a node yet; it is passed so it starts
+      # working the moment owl-os provides one.
+      - BLAH2_V=${BLAH2_V:-v0.4.2}
+      - OWL_OS_V=${OWL_OS_V:-}
+      - RETINA_NODE_V=${RETINA_NODE_V:-}
+      - LOG_LEVEL=${TELEMETRY_LOG_LEVEL:-INFO}
+    container_name: retina-telemetry
