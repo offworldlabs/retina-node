@@ -111,7 +111,16 @@ services:
       - RECEIVER_LON=${RECEIVER_LON:--84.65191}
       - ADSBLOL_RADIUS=${ADSBLOL_RADIUS:-40}
       - PROXY_PORT=3005
+      # SD-card endurance: run the graphs1090 RRD set from the /run tmpfs below
+      # and write it back as a single gzipped tarball, instead of 48 scattered
+      # in-place RRD updates every 60s. Only effective because /run is tmpfs.
+      - GRAPHS1090_REDUCE_IO=true
     tmpfs:
+      # /run holds volatile runtime state (readsb JSON at 1 Hz, tar1090 chunks,
+      # graphs1090 PNGs, s6 service dirs) and is tmpfs on any normal install.
+      # On the container overlay it cost ~7 GB/day of SD-card writes for ~8 KB/min
+      # of real data. exec is required: s6-overlay execs its service scripts here.
+      - /run:exec,size=64M
       - /var/log:size=32M
 
   adsb2dd:
