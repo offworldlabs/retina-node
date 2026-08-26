@@ -149,6 +149,13 @@ services:
     restart: "no"
     image: ghcr.io/offworldlabs/retina-spectrum:${SPECTRUM_V:-v0.1.1}
     network_mode: host
+    # Pinned for the same reason as retina-telemetry: this resolves
+    # tower-finder.retina.fm, so it must not depend on the host's resolv.conf
+    # having been correct at the instant the container happened to be created.
+    dns:
+      - ${NODE_DNS_1:-1.1.1.1}
+      - ${NODE_DNS_2:-8.8.8.8}
+      - ${NODE_DNS_3:-2606:4700:4700::1111}
     pid: "host"
     privileged: true
     environment:
@@ -188,6 +195,27 @@ services:
     # network_mode: host to reach blah2_api on 127.0.0.1:3000. It binds no
     # listening ports of its own — every input here is a poll or a file read.
     network_mode: host
+    # Pinned resolvers rather than the host's. Docker copies the host's
+    # /etc/resolv.conf into a container once, at creation, and never refreshes
+    # it: not on restart, not on reboot. A container created while that file was
+    # still wrong therefore stays wrong for its entire life. That is what
+    # stranded five boards in August 2026. They ran blah2, collected detections
+    # and reported active while resolving nothing, because their telemetry
+    # container was created in the seconds before NetworkManager wrote a usable
+    # resolv.conf. Setting dns here makes Docker write the file from these
+    # values and ignore the host's copy entirely, so creation timing stops
+    # mattering. Docker confirms it in the file it writes, as "Overrides:
+    # [nameservers]".
+    #
+    # NODE_DNS_* can be set in .env for standalone deployments. On a Mender
+    # node it cannot, yet: config-merger rewrites the manifests .env wholesale
+    # on every run, so a value added there by hand is lost at the next config
+    # merge. A site that blocks outbound DNS to public resolvers therefore
+    # needs config-merger taught to emit these before the override is usable.
+    dns:
+      - ${NODE_DNS_1:-1.1.1.1}
+      - ${NODE_DNS_2:-8.8.8.8}
+      - ${NODE_DNS_3:-2606:4700:4700::1111}
     # No depends_on, unlike every other service. This is the one that must keep
     # reporting while the rest of the stack is crash-looping, which is the whole
     # point of it: gating it on config-merger would leave it dead exactly when
