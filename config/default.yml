@@ -81,17 +81,28 @@ truth:
     ip: 0.0.0.0
     port: 30001
 
+# Null until an owner picks a tower. This shipped as Greenwich Observatory /
+# Crystal Palace, which is indistinguishable downstream from a real choice, so
+# every consumer treated an unconfigured node as a configured one and nodes
+# registered with the server claiming to be in south-east London.
+#
+# Keys kept, with null values, rather than removed: consumers need to tell
+# "unset" from "absent because this config is malformed", and retina-gui's
+# config form renders from these keys.
+#
+# Set by retina-gui's tower step (/towers/select), which writes rx, tx and
+# capture.fc together into user.yml.
 location:
   rx:
-    latitude: 51.4769
-    longitude: -0.0005
-    altitude: 48
-    name: "Greenwich Observatory"
+    latitude: null
+    longitude: null
+    altitude: null
+    name: null
   tx:
-    latitude: 51.4244
-    longitude: -0.0753
-    altitude: 219
-    name: "Crystal Palace"
+    latitude: null
+    longitude: null
+    altitude: null
+    name: null
 
 save:
   iq: false
