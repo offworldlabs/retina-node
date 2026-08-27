@@ -275,6 +275,78 @@ class TestConfigMerge(unittest.TestCase):
 
         self.assertIn('ADSBLOL_ENABLED=false', env_content)
 
+    def test_tar1090_env_omits_an_unset_location(self):
+        """This used to write RECEIVER_LAT=0, which is Null Island: a real
+        place the node then claimed to be."""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), {
+            'tar1090': {'adsblol_fallback': True, 'adsblol_radius': 40},
+            'location': {'rx': {'latitude': None, 'longitude': None,
+                                'altitude': None, 'name': None}},
+        })
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        with open(os.path.join(self.config_dir, 'tar1090.env')) as f:
+            env_content = f.read()
+
+        self.assertNotIn('RECEIVER_LAT=', env_content)
+        # The adsb.lol query is a radius around the receiver. With no receiver
+        # there is no query to make, only a wrong one feeding blah2 false truth.
+        self.assertIn('ADSBLOL_ENABLED=false', env_content)
+
+    def test_tar1090_env_partial_location_is_not_sited(self):
+        """A latitude with no longitude is not a position."""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), {
+            'tar1090': {'adsblol_fallback': True, 'adsblol_radius': 40},
+            'location': {'rx': {'latitude': 42.241528, 'longitude': None}},
+        })
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        with open(os.path.join(self.config_dir, 'tar1090.env')) as f:
+            env_content = f.read()
+
+        self.assertNotIn('RECEIVER_LAT=', env_content)
+        self.assertIn('ADSBLOL_ENABLED=false', env_content)
+
+    def test_tar1090_env_returns_once_the_owner_sets_a_location(self):
+        """The unset case must not be sticky."""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), {
+            'tar1090': {'adsblol_fallback': True, 'adsblol_radius': 40},
+            'location': {'rx': {'latitude': None, 'longitude': None, 'altitude': None}},
+        })
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+        self.write_yaml(os.path.join(self.config_dir, 'user.yml'), {
+            'location': {'rx': {'latitude': 42.241528, 'longitude': -72.648361,
+                                'altitude': 619.2, 'name': 'ret4c844c20'}}
+        })
+
+        self.run_merge()
+
+        with open(os.path.join(self.config_dir, 'tar1090.env')) as f:
+            env_content = f.read()
+
+        self.assertIn('RECEIVER_LAT=42.241528', env_content)
+        self.assertIn('ADSBLOL_ENABLED=true', env_content)
+
+    def test_tar1090_env_zero_is_a_real_location(self):
+        """0,0 set by an owner is a choice, not an absence."""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), {
+            'tar1090': {'adsblol_fallback': True, 'adsblol_radius': 40},
+            'location': {'rx': {'latitude': 0, 'longitude': 0, 'altitude': 0}},
+        })
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        with open(os.path.join(self.config_dir, 'tar1090.env')) as f:
+            env_content = f.read()
+
+        self.assertIn('RECEIVER_LAT=0', env_content)
+        self.assertIn('ADSBLOL_ENABLED=true', env_content)
+
     def test_tar1090_env_user_override(self):
         """Test that user config overrides tar1090 settings in .env"""
         default_config = {
@@ -391,11 +463,20 @@ class TestConfigMerge(unittest.TestCase):
         rx = defaults['location']['rx']
         tar1090 = defaults.get('tar1090', {})
 
-        self.assertIn(f"RECEIVER_LAT={rx['latitude']}", env_content)
-        self.assertIn(f"RECEIVER_LON={rx['longitude']}", env_content)
-        self.assertIn(f"RECEIVER_ALT={rx['altitude']}", env_content)
+        sited = rx.get('latitude') is not None and rx.get('longitude') is not None
+
+        if sited:
+            self.assertIn(f"RECEIVER_LAT={rx['latitude']}", env_content)
+            self.assertIn(f"RECEIVER_LON={rx['longitude']}", env_content)
+            self.assertIn(f"RECEIVER_ALT={rx['altitude']}", env_content)
+        else:
+            # The shipped default carries no location on purpose, so a node
+            # nobody has configured must not name a position at all.
+            self.assertNotIn("RECEIVER_LAT=", env_content)
+            self.assertNotIn("RECEIVER_LON=", env_content)
+
         self.assertIn(
-            f"ADSBLOL_ENABLED={'true' if tar1090.get('adsblol_fallback') else 'false'}",
+            f"ADSBLOL_ENABLED={'true' if tar1090.get('adsblol_fallback') and sited else 'false'}",
             env_content,
         )
         self.assertIn(f"ADSBLOL_RADIUS={tar1090['adsblol_radius']}", env_content)
