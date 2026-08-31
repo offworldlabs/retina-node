@@ -8,22 +8,35 @@ For development/testing without Mender, see [STANDALONE.md](STANDALONE.md).
 
 ## Web Interfaces
 
+Every node has a permanent address of its own, `ret<node_id>.local`, derived from
+its Mender node_id and unchanged for the life of the board. The node's own page
+shows it, under **Configuration > This node**.
+
 | Service | Port | URL | Description |
 |---------|------|-----|-------------|
-| retina-gui | 80 | `http://owl.local` | Node management, SSH keys, service links |
-| blah2 | 49152 | `http://owl.local:49152` | Passive radar UI |
-| tar1090 | 8078 | `http://owl.local:8078` | ADS-B aircraft map |
-| adsb2dd | 49155 | `http://owl.local:49155` | Delay-Doppler truth overlay |
-| retina-spectrum | 3020 | `http://owl.local:3020` | Spectrum analyzer |
+| retina-gui | 80 | `http://ret<node_id>.local` | Node management, SSH keys, service links |
+| blah2 | 49152 | `http://ret<node_id>.local:49152` | Passive radar UI |
+| tar1090 | 8078 | `http://ret<node_id>.local:8078` | ADS-B aircraft map |
+| adsb2dd | 49155 | `http://ret<node_id>.local:49155` | Delay-Doppler truth overlay |
+| retina-spectrum | 3020 | `http://ret<node_id>.local:3020` | Spectrum analyzer |
+
+`http://owl.local` also reaches a node, but it is a shared name that *every*
+node on the network answers, so with more than one node it reaches whichever
+replies first. Use it to find a node; use `ret<node_id>.local` to work with a
+particular one.
 
 ## SSH Access
 
-Add your SSH public key via the web GUI at `http://owl.local`:
+Add your SSH public key via the web GUI:
 
 1. On your computer, copy your public key: `cat ~/.ssh/id_ed25519.pub`
-2. Open `http://owl.local` in a browser
+2. Open `http://owl.local` in a browser, and pick your node
 3. Paste the key and click "Add Key"
-4. SSH in: `ssh node@owl.local`
+4. SSH in: `ssh node@ret<node_id>.local`
+
+Always SSH to the node's own `ret<node_id>.local`, never to `owl.local`. That
+name is answered by every node on the network, so which host you reach can
+change between connections and SSH will refuse on the host key mismatch.
 
 Keys persist across reboots and OTA updates.
 

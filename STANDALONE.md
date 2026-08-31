@@ -58,13 +58,20 @@ sudo docker compose up -d
 
 ## Web Interfaces
 
+Reach these on the host you are running the stack on: `localhost` when you are
+sitting at it, otherwise its IP or hostname.
+
 | Service | URL | Description |
 |---------|-----|-------------|
-| blah2 | http://owl.local:49152/ | Passive radar display |
-| tar1090 | http://owl.local:8078/ | ADS-B aircraft map |
-| adsb2dd | http://owl.local:49155/ | Delay-Doppler truth overlay |
+| blah2 | http://\<host\>:49152/ | Passive radar display |
+| tar1090 | http://\<host\>:8078/ | ADS-B aircraft map |
+| adsb2dd | http://\<host\>:49155/ | Delay-Doppler truth overlay |
 
-Note: retina-gui (http://owl.local/) is not fully supported when running standalone (yet), config is not editable via the GUI and should be done manually.
+On owl-os the node also answers to its own `ret<node_id>.local`, and to the
+shared `owl.local` that every node on the network answers. On any other Linux
+host neither name exists, so use the host's address.
+
+Note: retina-gui is not fully supported when running standalone (yet), config is not editable via the GUI and should be done manually.
 
 ## Development Workflow
 
