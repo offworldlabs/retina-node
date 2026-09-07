@@ -617,5 +617,106 @@ class TestConfigMerge(unittest.TestCase):
         self.assertEqual(output['tracker']['min_snr'], 4.5)
 
 
+    # --- Doppler span migration -------------------------------------------
+    # The merger seeds user.yml from default.yml on first boot, so every node
+    # persists the shipped span. These cover which of those persisted values
+    # the merger is allowed to move.
+
+    def default_with_span(self, doppler_min=-300, doppler_max=300):
+        """A default.yml carrying the shipped ambiguity block."""
+        return {
+            'process': {
+                'ambiguity': {
+                    'delayMin': -10,
+                    'delayMax': 400,
+                    'dopplerMin': doppler_min,
+                    'dopplerMax': doppler_max,
+                }
+            }
+        }
+
+    def write_span_configs(self, user_ambiguity, forced_config=None):
+        """Write a default/user/forced set differing only in the ambiguity block."""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), self.default_with_span())
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), forced_config or {})
+        self.write_yaml(os.path.join(self.config_dir, 'user.yml'),
+                        {'process': {'ambiguity': user_ambiguity}})
+
+    def test_doppler_span_first_boot_copy_migrated(self):
+        """A user.yml holding the old shipped span gives way to the new default"""
+        self.write_span_configs({'delayMin': -10, 'delayMax': 400,
+                                 'dopplerMin': -200, 'dopplerMax': 200})
+
+        output = self.read_yaml(self.run_merge())
+        ambiguity = output['process']['ambiguity']
+
+        self.assertEqual(ambiguity['dopplerMin'], -300)
+        self.assertEqual(ambiguity['dopplerMax'], 300)
+        # Only the Doppler bounds move; the rest of the block is the user's.
+        self.assertEqual(ambiguity['delayMin'], -10)
+        self.assertEqual(ambiguity['delayMax'], 400)
+
+    def test_doppler_span_deliberate_override_kept(self):
+        """A span nobody could have got from a first-boot copy survives"""
+        self.write_span_configs({'dopplerMin': -1000, 'dopplerMax': 1000})
+
+        output = self.read_yaml(self.run_merge())
+
+        self.assertEqual(output['process']['ambiguity']['dopplerMin'], -1000)
+        self.assertEqual(output['process']['ambiguity']['dopplerMax'], 1000)
+
+    def test_doppler_span_partial_legacy_match_kept(self):
+        """One legacy bound is not the legacy pair, so neither bound moves"""
+        self.write_span_configs({'dopplerMin': -200, 'dopplerMax': 1000})
+
+        output = self.read_yaml(self.run_merge())
+
+        self.assertEqual(output['process']['ambiguity']['dopplerMin'], -200)
+        self.assertEqual(output['process']['ambiguity']['dopplerMax'], 1000)
+
+    def test_doppler_span_asymmetric_legacy_value_kept(self):
+        """An asymmetric span that happens to touch 200 is still deliberate"""
+        self.write_span_configs({'dopplerMin': -200, 'dopplerMax': 400})
+
+        output = self.read_yaml(self.run_merge())
+
+        self.assertEqual(output['process']['ambiguity']['dopplerMin'], -200)
+        self.assertEqual(output['process']['ambiguity']['dopplerMax'], 400)
+
+    def test_doppler_span_forced_still_wins(self):
+        """forced.yml keeps the last word over a migrated span"""
+        self.write_span_configs(
+            {'dopplerMin': -200, 'dopplerMax': 200},
+            forced_config={'process': {'ambiguity': {'dopplerMin': -250, 'dopplerMax': 250}}},
+        )
+
+        output = self.read_yaml(self.run_merge())
+
+        self.assertEqual(output['process']['ambiguity']['dopplerMin'], -250)
+        self.assertEqual(output['process']['ambiguity']['dopplerMax'], 250)
+
+    def test_doppler_span_migration_does_not_rewrite_user_yml(self):
+        """The overlay on disk is untouched, so the migration has to stay in place"""
+        self.write_span_configs({'dopplerMin': -200, 'dopplerMax': 200})
+
+        self.run_merge()
+
+        user = self.read_yaml(os.path.join(self.config_dir, 'user.yml'))
+        self.assertEqual(user['process']['ambiguity']['dopplerMin'], -200)
+        self.assertEqual(user['process']['ambiguity']['dopplerMax'], 200)
+
+    def test_doppler_span_absent_from_user_config(self):
+        """A user.yml with no ambiguity block just takes the default"""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), self.default_with_span())
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+        self.write_yaml(os.path.join(self.config_dir, 'user.yml'),
+                        {'network': {'node_id': 'test-node'}})
+
+        output = self.read_yaml(self.run_merge())
+
+        self.assertEqual(output['process']['ambiguity']['dopplerMin'], -300)
+        self.assertEqual(output['process']['ambiguity']['dopplerMax'], 300)
+
+
 if __name__ == '__main__':
     unittest.main()
