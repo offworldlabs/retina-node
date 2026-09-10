@@ -176,11 +176,17 @@ services:
         condition: service_completed_successfully
     # --tcp-host 127.0.0.1 (not the image's 0.0.0.0 default): network_mode
     # host means 0.0.0.0 would bind the real host interface, exposing the
-    # ingest port to the LAN. retina-gui is always colocated on this same
-    # host, so loopback-only is sufficient.
+    # ingest port to the LAN. blah2_api (which feeds it) and retina-gui (which
+    # controls it) are both colocated on this same host, so loopback-only is
+    # sufficient for both ports.
+    #
+    # --control-port carries POST /reset and GET /health. Auto-Calibrate needs
+    # the reset between candidate towers, and it cannot ride the ingest socket
+    # any more: that accepts one connection at a time and blah2_api owns it.
     command: >
       python -m retina_tracker.track_detections
       --tcp --tcp-host 127.0.0.1 --tcp-port 30100
+      --control-host 127.0.0.1 --control-port 30101
       -s /app/output/events.jsonl
       -c /config/retina-tracker.yaml
       --blah2-config /config/config.yml
