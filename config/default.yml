@@ -63,11 +63,22 @@ network:
 
   node_id: "ret000000000"
 
-  # Forward detections to external tracker container
+  # Forward detections to the retina-tracker sidecar. blah2_api enriches each
+  # frame with ADS-B truth before forwarding, so the tracker gets the annotated
+  # frame rather than the bare one, which is where a track's adsb_hex comes from.
+  #
+  # 127.0.0.1 rather than a container name: retina-tracker runs with
+  # network_mode host and binds loopback only (--tcp-host 127.0.0.1), and
+  # blah2_api is on the same host network. The default 'blah2_tracker:3012'
+  # names a container from blah2's own compose, which does not exist here.
+  #
+  # This must stay in step with retina-gui: the tracker's ingest socket accepts
+  # one connection at a time, so exactly one process may feed it. retina-gui
+  # stopped forwarding in the same release that turned this on.
   tracker_forward:
-    enabled: false
-    host: 'blah2_tracker'
-    port: 3012
+    enabled: true
+    host: '127.0.0.1'
+    port: 30100
 
 truth:
   adsb:
