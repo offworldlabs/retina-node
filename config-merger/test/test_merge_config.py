@@ -717,6 +717,120 @@ class TestConfigMerge(unittest.TestCase):
         self.assertEqual(output['process']['ambiguity']['dopplerMin'], -300)
         self.assertEqual(output['process']['ambiguity']['dopplerMax'], 300)
 
+    # --- tracker_forward migration ----------------------------------------
+    # Same first-boot-copy problem as the Doppler span: every node persists the
+    # block that shipped when it booted, so default.yml alone cannot move it.
+
+    def default_with_forward(self, enabled=True, host='127.0.0.1', port=30100):
+        """A default.yml carrying the shipped tracker_forward block."""
+        return {
+            'network': {
+                'ip': '0.0.0.0',
+                'ports': {'api': 3000},
+                'tracker_forward': {'enabled': enabled, 'host': host, 'port': port},
+            }
+        }
+
+    def write_forward_configs(self, user_network, forced_config=None):
+        """Write a default/user/forced set differing only in the network block."""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), self.default_with_forward())
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), forced_config or {})
+        self.write_yaml(os.path.join(self.config_dir, 'user.yml'), {'network': user_network})
+
+    def test_tracker_forward_first_boot_copy_migrated(self):
+        """The block that shipped with gui-side forwarding gives way to the default"""
+        self.write_forward_configs(
+            {'node_id': 'test-node',
+             'tracker_forward': {'enabled': False, 'host': 'blah2_tracker', 'port': 3012}})
+
+        forward = self.read_yaml(self.run_merge())['network']['tracker_forward']
+
+        self.assertTrue(forward['enabled'])
+        self.assertEqual(forward['host'], '127.0.0.1')
+        self.assertEqual(forward['port'], 30100)
+
+    def test_tracker_forward_migration_leaves_the_rest_of_network_alone(self):
+        """Only the forwarding block moves; everything else is still the user's"""
+        self.write_forward_configs(
+            {'node_id': 'ret7dd2cb0d', 'ip': '10.0.0.1',
+             'tracker_forward': {'enabled': False, 'host': 'blah2_tracker', 'port': 3012}})
+
+        network = self.read_yaml(self.run_merge())['network']
+
+        self.assertEqual(network['node_id'], 'ret7dd2cb0d')
+        self.assertEqual(network['ip'], '10.0.0.1')
+
+    def test_tracker_forward_deliberate_target_kept(self):
+        """A node aimed somewhere real is a choice, not a first-boot copy"""
+        self.write_forward_configs(
+            {'tracker_forward': {'enabled': True, 'host': '192.168.0.9', 'port': 9999}})
+
+        forward = self.read_yaml(self.run_merge())['network']['tracker_forward']
+
+        self.assertEqual(forward['host'], '192.168.0.9')
+        self.assertEqual(forward['port'], 9999)
+
+    def test_tracker_forward_deliberately_disabled_elsewhere_kept(self):
+        """Disabled is only a fossil alongside the rest of the legacy triple"""
+        self.write_forward_configs(
+            {'tracker_forward': {'enabled': False, 'host': '127.0.0.1', 'port': 30100}})
+
+        forward = self.read_yaml(self.run_merge())['network']['tracker_forward']
+
+        self.assertFalse(forward['enabled'])
+
+    def test_tracker_forward_partial_legacy_match_kept(self):
+        """The legacy host on a different port is not the block we shipped"""
+        self.write_forward_configs(
+            {'tracker_forward': {'enabled': False, 'host': 'blah2_tracker', 'port': 3013}})
+
+        forward = self.read_yaml(self.run_merge())['network']['tracker_forward']
+
+        self.assertFalse(forward['enabled'])
+        self.assertEqual(forward['port'], 3013)
+
+    def test_tracker_forward_extra_key_is_not_the_shipped_block(self):
+        """Anything added by hand makes it someone's config rather than a copy"""
+        self.write_forward_configs(
+            {'tracker_forward': {'enabled': False, 'host': 'blah2_tracker',
+                                 'port': 3012, 'note': 'left off on purpose'}})
+
+        forward = self.read_yaml(self.run_merge())['network']['tracker_forward']
+
+        self.assertFalse(forward['enabled'])
+        self.assertEqual(forward['note'], 'left off on purpose')
+
+    def test_tracker_forward_forced_still_wins(self):
+        """forced.yml keeps the last word over a migrated block"""
+        self.write_forward_configs(
+            {'tracker_forward': {'enabled': False, 'host': 'blah2_tracker', 'port': 3012}},
+            forced_config={'network': {'tracker_forward': {'enabled': False}}},
+        )
+
+        forward = self.read_yaml(self.run_merge())['network']['tracker_forward']
+
+        self.assertFalse(forward['enabled'])
+
+    def test_tracker_forward_migration_does_not_rewrite_user_yml(self):
+        """The overlay on disk is untouched, so the migration has to stay in place"""
+        self.write_forward_configs(
+            {'tracker_forward': {'enabled': False, 'host': 'blah2_tracker', 'port': 3012}})
+
+        self.run_merge()
+
+        user = self.read_yaml(os.path.join(self.config_dir, 'user.yml'))
+        self.assertEqual(user['network']['tracker_forward'],
+                         {'enabled': False, 'host': 'blah2_tracker', 'port': 3012})
+
+    def test_tracker_forward_absent_from_user_config(self):
+        """A user.yml with no forwarding block just takes the default"""
+        self.write_forward_configs({'node_id': 'test-node'})
+
+        forward = self.read_yaml(self.run_merge())['network']['tracker_forward']
+
+        self.assertTrue(forward['enabled'])
+        self.assertEqual(forward['port'], 30100)
+
 
 if __name__ == '__main__':
     unittest.main()
