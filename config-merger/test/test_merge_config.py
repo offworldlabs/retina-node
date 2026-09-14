@@ -831,6 +831,99 @@ class TestConfigMerge(unittest.TestCase):
         self.assertTrue(forward['enabled'])
         self.assertEqual(forward['port'], 30100)
 
+    # --- ADS-B truth server migration -------------------------------------
+    # Same first-boot-copy problem again: the shipped truth server persists in
+    # every overlay, so default.yml alone cannot move a node off a dead host.
+
+    def default_with_truth(self, tar1090='localhost:8078'):
+        """A default.yml carrying the shipped ADS-B truth block."""
+        return {
+            'truth': {
+                'adsb': {
+                    'enabled': True,
+                    'tar1090': tar1090,
+                    'adsb2dd': 'localhost:49155',
+                }
+            }
+        }
+
+    def write_truth_configs(self, user_adsb, forced_config=None):
+        """Write a default/user/forced set differing only in the truth block."""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), self.default_with_truth())
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), forced_config or {})
+        self.write_yaml(os.path.join(self.config_dir, 'user.yml'), {'truth': {'adsb': user_adsb}})
+
+    def test_adsb_truth_first_boot_copy_migrated(self):
+        """The remote host that shipped gives way to the node's own tar1090"""
+        self.write_truth_configs({'enabled': True, 'tar1090': 'sfo1.retnode.com'})
+
+        adsb = self.read_yaml(self.run_merge())['truth']['adsb']
+
+        self.assertEqual(adsb['tar1090'], 'localhost:8078')
+
+    def test_adsb_truth_migration_leaves_the_rest_of_adsb_alone(self):
+        """Only the truth server moves; every other setting is still the user's"""
+        self.write_truth_configs(
+            {'enabled': True, 'tar1090': 'sfo1.retnode.com',
+             'adsb2dd': 'localhost:49155', 'delay_tolerance': 4.5})
+
+        adsb = self.read_yaml(self.run_merge())['truth']['adsb']
+
+        self.assertEqual(adsb['tar1090'], 'localhost:8078')
+        self.assertEqual(adsb['delay_tolerance'], 4.5)
+
+    def test_adsb_truth_deliberate_server_kept(self):
+        """A node aimed at some other host is a choice, not a first-boot copy"""
+        self.write_truth_configs({'tar1090': 'adsb.example.internal:8080'})
+
+        adsb = self.read_yaml(self.run_merge())['truth']['adsb']
+
+        self.assertEqual(adsb['tar1090'], 'adsb.example.internal:8080')
+
+    def test_adsb_truth_receiver_address_kept(self):
+        """A receiver's own address is wrong differently, and not ours to rewrite"""
+        self.write_truth_configs({'tar1090': '192.168.1.143:30005'})
+
+        adsb = self.read_yaml(self.run_merge())['truth']['adsb']
+
+        self.assertEqual(adsb['tar1090'], '192.168.1.143:30005')
+
+    def test_adsb_truth_legacy_host_with_a_port_kept(self):
+        """The legacy host named with a port is not the string we shipped"""
+        self.write_truth_configs({'tar1090': 'sfo1.retnode.com:8078'})
+
+        adsb = self.read_yaml(self.run_merge())['truth']['adsb']
+
+        self.assertEqual(adsb['tar1090'], 'sfo1.retnode.com:8078')
+
+    def test_adsb_truth_forced_still_wins(self):
+        """forced.yml keeps the last word over a migrated truth server"""
+        self.write_truth_configs(
+            {'tar1090': 'sfo1.retnode.com'},
+            forced_config={'truth': {'adsb': {'tar1090': 'forced.example:8078'}}},
+        )
+
+        adsb = self.read_yaml(self.run_merge())['truth']['adsb']
+
+        self.assertEqual(adsb['tar1090'], 'forced.example:8078')
+
+    def test_adsb_truth_migration_does_not_rewrite_user_yml(self):
+        """The overlay on disk is untouched, so the migration has to stay in place"""
+        self.write_truth_configs({'tar1090': 'sfo1.retnode.com'})
+
+        self.run_merge()
+
+        user = self.read_yaml(os.path.join(self.config_dir, 'user.yml'))
+        self.assertEqual(user['truth']['adsb']['tar1090'], 'sfo1.retnode.com')
+
+    def test_adsb_truth_absent_from_user_config(self):
+        """A user.yml with no truth server just takes the default"""
+        self.write_truth_configs({'enabled': True})
+
+        adsb = self.read_yaml(self.run_merge())['truth']['adsb']
+
+        self.assertEqual(adsb['tar1090'], 'localhost:8078')
+
 
 if __name__ == '__main__':
     unittest.main()
