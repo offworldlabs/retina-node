@@ -36,18 +36,6 @@ process:
     minDelay: 5
     minDoppler: 15
     nCentroid: 6
-  tracker:
-    # blah2's own built-in tracker - superseded by the retina-tracker sidecar
-    # (see retina_tracker below), which is what's actually used. Left disabled
-    # so nothing runs its associate/promote loop or feeds its unused
-    # blah2-api /api/tracker endpoint.
-    enable: false
-    initiate:
-      M: 3
-      N: 5
-      maxAcc: 10
-    delete: 10
-    smooth: "none"
 
 network:
   ip: 0.0.0.0
@@ -55,7 +43,6 @@ network:
     api: 3000
     map: 3001
     detection: 3002
-    track: 3003
     timestamp: 4000
     timing: 4001
     iqdata: 4002
@@ -130,7 +117,7 @@ tar1090:
   adsblol_radius: 40
 
 # retina-tracker sidecar (github.com/offworldlabs/retina-tracker) config.
-# Unrelated to process.tracker above, which is blah2's own built-in tracker.
+# blah2 has no built-in tracker of its own; this sidecar does all tracking.
 retina_tracker:
   # dB. Detections below this are discarded before tracking even begins -
   # too high and the tracker silently never confirms a track no matter how

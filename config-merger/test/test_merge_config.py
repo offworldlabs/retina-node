@@ -831,6 +831,87 @@ class TestConfigMerge(unittest.TestCase):
         self.assertTrue(forward['enabled'])
         self.assertEqual(forward['port'], 30100)
 
+    # --- blah2 tracker removal --------------------------------------------
+    # The same first-boot-copy problem again, but unconditional: the code these
+    # keys configured no longer exists, so there is no deliberate value to keep.
+
+    def write_tracker_configs(self, user_process=None, user_ports=None,
+                              forced_config=None):
+        """Write a default/user/forced set where default.yml has no tracker."""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), {
+            'process': {'detection': {'enable': True}},
+            'network': {'ip': '0.0.0.0', 'ports': {'api': 3000, 'map': 3001}},
+        })
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), forced_config or {})
+        user = {}
+        if user_process is not None:
+            user['process'] = user_process
+        if user_ports is not None:
+            user['network'] = {'ports': user_ports}
+        self.write_yaml(os.path.join(self.config_dir, 'user.yml'), user)
+
+    def test_tracker_block_removed_from_merged_config(self):
+        """The first-boot copy of process.tracker does not survive the merge"""
+        self.write_tracker_configs(user_process={
+            'tracker': {'enable': True, 'initiate': {'M': 3, 'N': 5, 'maxAcc': 10},
+                        'delete': 10, 'smooth': 'none'}})
+
+        process = self.read_yaml(self.run_merge())['process']
+
+        self.assertNotIn('tracker', process)
+
+    def test_track_port_removed_from_merged_config(self):
+        """network.ports.track goes too: nothing publishes or listens on it"""
+        self.write_tracker_configs(user_ports={'api': 3000, 'track': 3003})
+
+        ports = self.read_yaml(self.run_merge())['network']['ports']
+
+        self.assertNotIn('track', ports)
+        self.assertEqual(ports['api'], 3000)
+
+    def test_tracker_removal_is_unconditional(self):
+        """Tuned M/N is not a reason to keep settings for code that is gone"""
+        self.write_tracker_configs(user_process={
+            'tracker': {'enable': True, 'initiate': {'M': 4, 'N': 9}, 'delete': 25}})
+
+        process = self.read_yaml(self.run_merge())['process']
+
+        self.assertNotIn('tracker', process)
+
+    def test_tracker_removal_leaves_the_rest_of_process_alone(self):
+        """Only the tracker block goes; the user's other process keys stay"""
+        self.write_tracker_configs(user_process={
+            'tracker': {'enable': True},
+            'detection': {'enable': False, 'pfa': 1e-6},
+        })
+
+        process = self.read_yaml(self.run_merge())['process']
+
+        self.assertNotIn('tracker', process)
+        self.assertFalse(process['detection']['enable'])
+        self.assertEqual(process['detection']['pfa'], 1e-6)
+
+    def test_tracker_absent_from_user_config(self):
+        """A user.yml with no tracker block merges without complaint"""
+        self.write_tracker_configs(user_process={'detection': {'enable': True}})
+
+        config = self.read_yaml(self.run_merge())
+
+        self.assertNotIn('tracker', config['process'])
+        self.assertNotIn('track', config['network']['ports'])
+
+    def test_tracker_removal_does_not_rewrite_user_yml(self):
+        """The overlay on disk is untouched, so the removal has to stay in place"""
+        self.write_tracker_configs(
+            user_process={'tracker': {'enable': True}},
+            user_ports={'api': 3000, 'track': 3003})
+
+        self.run_merge()
+
+        user = self.read_yaml(os.path.join(self.config_dir, 'user.yml'))
+        self.assertTrue(user['process']['tracker']['enable'])
+        self.assertEqual(user['network']['ports']['track'], 3003)
+
 
 if __name__ == '__main__':
     unittest.main()
