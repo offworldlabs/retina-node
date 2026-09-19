@@ -250,6 +250,55 @@ def migrate_tracker_forward(user):
         del network['tracker_forward']
 
 
+def migrate_remove_tracker(user):
+    """Drop blah2's built-in tracker settings, which no longer exist.
+
+    blah2's own tracker was removed outright: nothing consumed it (retina-gui's
+    Tracker page reads the retina-tracker sidecar, and blah2-api's /api/tracker
+    is gone with it), and it carried an unbounded leak - Track::remove() never
+    erased nInactive, which Tracker::process() then deep copied every CPI, worth
+    roughly 3 MB/h on a board with no swap.
+
+    default.yml no longer ships these keys, but that alone reaches no node. The
+    merger seeds user.yml with a whole copy of default.yml on first boot and
+    user.yml overrides default.yml, so every node already on the estate persists
+    the block that shipped when it booted. Same first-boot copy problem
+    migrate_doppler_span() and migrate_tracker_forward() solve.
+
+    Unconditional, unlike the migrations above, which compare against a LEGACY_*
+    value so a deliberate choice survives. There is no deliberate choice to
+    protect here: the code these keys configured does not exist, so any value is
+    equally dead. network.ports.track goes the same way, since the socket blah2
+    published tracks on and the listener blah2-api read them with are both gone.
+
+    Dropping the keys rather than rewriting them leaves user.yml on disk
+    untouched, so this stays load-bearing rather than a one-shot fixup, and a
+    Mender rollback regenerates the old config from the old default.yml.
+
+    Note for anyone bisecting: once this has run, a blah2 image from before the
+    removal will abort on startup rather than warn, because it reads
+    process.tracker.enable through ryml, whose default error handler calls
+    abort(). Swap the config-merger image back at the same time.
+    """
+    try:
+        process = user['process']
+    except (KeyError, TypeError):
+        process = None
+    if isinstance(process, dict) and 'tracker' in process:
+        print("Dropping first-boot process.tracker from user config: blah2's "
+              "built-in tracker no longer exists")
+        del process['tracker']
+
+    try:
+        ports = user['network']['ports']
+    except (KeyError, TypeError):
+        return
+    if isinstance(ports, dict) and 'track' in ports:
+        print("Dropping first-boot network.ports.track from user config: "
+              "nothing publishes or listens on it any more")
+        del ports['track']
+
+
 def migrate_adsb_truth_server(user):
     """Drop an ADS-B truth server the user never chose, so default.yml can change it.
 
@@ -380,6 +429,7 @@ def main():
                 print("Applying user overrides...")
                 migrate_doppler_span(user)
                 migrate_tracker_forward(user)
+                migrate_remove_tracker(user)
                 migrate_adsb_truth_server(user)
                 merge(config, user)
             else:

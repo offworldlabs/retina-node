@@ -56,7 +56,6 @@ services:
       - "3000:3000"  # API port
       - "3001:3001"  # Map port
       - "3002:3002"  # Detection port
-      - "3003:3003"  # Track port
     networks:
       - blah2
       - caddy
