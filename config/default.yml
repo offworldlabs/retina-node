@@ -70,7 +70,12 @@ network:
 truth:
   adsb:
     enabled: true
-    tar1090: 'sfo1.retnode.com'
+    # The node's own tar1090 container, which every node runs on the same port.
+    # Node-invariant on purpose: a local receiver is described by tar1090.adsb_source
+    # below and merged in there, so adding one never means editing this. Pointing
+    # this at a receiver directly is the mistake it is shaped to prevent, because
+    # a receiver's raw feed port speaks BEAST and this is fetched over HTTP.
+    tar1090: 'localhost:8078'
     adsb2dd: 'localhost:49155'
     delay_tolerance: 2.0
     doppler_tolerance: 5.0
