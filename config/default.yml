@@ -48,7 +48,13 @@ network:
     iqdata: 4002
     config: 4003
 
-  node_id: "ret000000000"
+  # Placeholder only. config-merger overwrites this with the real value from
+  # /data/mender/node_id on every merge, and nothing derives an identity from
+  # node config. It deliberately does not look like a node id: the old
+  # "ret000000000" was close enough to a real one to be mistaken for a live
+  # node in a config dump, and matches neither the ret<8 hex> nor the
+  # retg<15 hex> format.
+  node_id: "unset"
 
   # Forward detections to the retina-tracker sidecar. blah2_api enriches each
   # frame with ADS-B truth before forwarding, so the tracker gets the annotated
