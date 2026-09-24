@@ -26,7 +26,6 @@ Outputs:
 """
 
 import os
-import shutil
 import sys
 
 import yaml
@@ -383,11 +382,8 @@ def ensure_node_id(user_config_path):
             user_config['network'] = {}
         user_config['network']['node_id'] = node_id
 
-        # Write back to user config (atomic)
-        temp_path = user_config_path + '.node_id_tmp.' + str(os.getpid())
-        with open(temp_path, 'w') as f:
-            yaml.dump(user_config, f, default_flow_style=False, sort_keys=False)
-        os.rename(temp_path, user_config_path)
+        write_file_atomic(user_config_path, yaml.dump(
+            user_config, default_flow_style=False, sort_keys=False))
 
         print(f"Node ID set in {user_config_path}")
 
@@ -426,17 +422,9 @@ def main():
             print("User config not found, copying from defaults...")
             os.makedirs(os.path.dirname(user_config_path), exist_ok=True)
 
-            # Write to temp file first, then atomic rename
-            temp_path = user_config_path + '.tmp.' + str(os.getpid())
-            shutil.copy(default_config, temp_path)
-            try:
-                os.rename(temp_path, user_config_path)  # Atomic on POSIX
-                print(f"Created {user_config_path}")
-            except (FileExistsError, OSError):
-                # Another process created it first, clean up temp
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
-                print("User config was created by another process")
+            with open(default_config) as f:
+                write_file_atomic(user_config_path, f.read())
+            print(f"Created {user_config_path}")
 
         # Ensure node_id exists and matches hardware (add/update if needed, Pi only)
         ensure_node_id(user_config_path)
@@ -473,8 +461,8 @@ def main():
         # Write merged config to output
         print(f"Writing merged config to {output_config_path}")
         os.makedirs(os.path.dirname(output_config_path), exist_ok=True)
-        with open(output_config_path, 'w') as f:
-            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+        write_file_atomic(output_config_path, yaml.dump(
+            config, default_flow_style=False, sort_keys=False))
 
         # Generate .env file for tar1090-node
         generate_env_file(config, os.path.dirname(output_config_path))
