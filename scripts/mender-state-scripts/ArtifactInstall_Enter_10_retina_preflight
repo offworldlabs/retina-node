@@ -1,0 +1,92 @@
+#!/bin/sh
+# Repair the node state that makes a retina-node install fail, before the
+# docker-compose Update Module touches the running stack.
+#
+# The module renames current/ to previous/ and stops it, and only then finds
+# out whether the new stack can start. Two kinds of drift have failed that
+# install and then failed its rollback for the same reason, leaving the radar
+# stopped:
+#
+#   * a NUL-filled manifests/.env (power cut mid-write). Compose refuses to
+#     load the project at all, so it can neither stop the old stack nor start
+#     the new one.
+#   * a container that is not part of this compose project holding one of the
+#     project's fixed container_names. Compose cannot create its own.
+#
+# This repairs and never aborts. If this script fails the install, the
+# module's rollback finds neither new/ nor previous/ and takes its "rollback
+# after a commit" branch, which moves the live current/ out of the way. So
+# every step is best effort, nothing is deleted, and the exit status is 0.
+
+COMPOSE_ROOT="${RETINA_PREFLIGHT_COMPOSE_ROOT:-/data/mender-docker-compose}"
+PAYLOAD_FILES="${RETINA_PREFLIGHT_PAYLOAD_FILES:-/var/lib/mender/modules/v3/payloads/0000/tree/files}"
+PROJECT=retina-node
+LOG_FILE="$COMPOSE_ROOT/preflight.log"
+LOG_KEEP_LINES=200
+STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+
+log() {
+    # stderr reaches the Mender deployment log; the file survives the deployment.
+    echo "retina-preflight: $*" >&2
+    echo "$STAMP $*" >> "$LOG_FILE" 2>/dev/null
+}
+
+current_manifests="$COMPOSE_ROOT/current/manifests"
+
+# --- 1. A .env compose cannot parse -------------------------------------------
+
+env_file="$current_manifests/.env"
+if [ -f "$env_file" ]; then
+    reason=""
+    if [ "$(tr -d '\000' < "$env_file" | wc -c)" -ne "$(wc -c < "$env_file")" ]; then
+        reason="contains NUL bytes"
+    elif compose_err=$(cd "$current_manifests" && docker compose -p "$PROJECT" config -q 2>&1); then
+        :
+    else
+        case "$compose_err" in
+            *"$env_file"*|*"/.env:"*) reason="compose cannot parse it" ;;
+        esac
+    fi
+    if [ -n "$reason" ]; then
+        if mv "$env_file" "$env_file.corrupt-$STAMP"; then
+            log "set aside $env_file ($reason) as .env.corrupt-$STAMP; config-merger regenerates it on the next start"
+        else
+            log "could not set aside $env_file ($reason)"
+        fi
+    fi
+fi
+
+# --- 2. Stray containers holding the project's names --------------------------
+
+container_names() {
+    # The incoming manifest is authoritative; the current one covers a name the
+    # new release dropped but a stray container may still hold.
+    {
+        if [ -f "$PAYLOAD_FILES/manifests.tar" ]; then
+            tar -xOf "$PAYLOAD_FILES/manifests.tar" 2>/dev/null
+        fi
+        cat "$current_manifests"/*.yaml "$current_manifests"/*.yml 2>/dev/null
+    } | sed -n 's/^[[:space:]]*container_name:[[:space:]]*["'\'']\{0,1\}\([A-Za-z0-9_.-]*\).*/\1/p' | sort -u
+}
+
+for name in $(container_names); do
+    owner=$(docker inspect --type container \
+        -f '{{index .Config.Labels "com.docker.compose.project"}}' "$name" 2>/dev/null) || continue
+    [ "$owner" = "$PROJECT" ] && continue
+
+    parked="$name-parked-$STAMP"
+    docker update --restart=no "$name" > /dev/null 2>&1
+    docker stop -t 10 "$name" > /dev/null 2>&1
+    if docker rename "$name" "$parked" > /dev/null 2>&1; then
+        log "parked container $name (compose project '${owner:-none}') as $parked; it is stopped, not removed"
+    else
+        log "could not park container $name (compose project '${owner:-none}'); the install will fail on its name"
+    fi
+done
+
+# Keep the local record small: /data is shared with everything else on the node.
+if [ -f "$LOG_FILE" ]; then
+    tail -n "$LOG_KEEP_LINES" "$LOG_FILE" > "$LOG_FILE.tmp" 2>/dev/null && mv "$LOG_FILE.tmp" "$LOG_FILE"
+fi
+
+exit 0

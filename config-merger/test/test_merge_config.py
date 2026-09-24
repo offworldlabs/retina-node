@@ -1005,5 +1005,73 @@ class TestConfigMerge(unittest.TestCase):
         self.assertTrue(user['process']['tracker']['enable'])
         self.assertEqual(user['network']['ports']['track'], 3003)
 
+
+class TestAtomicWrites(unittest.TestCase):
+    """The compose .env must be replaced whole, never rewritten in place.
+
+    A NUL-filled manifests/.env (seen on ret9573ecda) stops compose loading the
+    project, so the node can neither update nor regenerate the file.
+    """
+
+    def setUp(self):
+        import importlib.util
+        script = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'script', 'merge_config.py')
+        spec = importlib.util.spec_from_file_location('merge_config', script)
+        self.mc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.mc)
+        self.test_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+
+    def test_replaces_the_file_rather_than_rewriting_it(self):
+        path = os.path.join(self.test_dir, '.env')
+        with open(path, 'w') as f:
+            f.write('OLD=1\n')
+        before = os.stat(path).st_ino
+
+        self.mc.write_file_atomic(path, 'NEW=1\n')
+
+        with open(path) as f:
+            self.assertEqual(f.read(), 'NEW=1\n')
+        self.assertNotEqual(os.stat(path).st_ino, before)
+
+    def test_leaves_no_temp_file_behind(self):
+        path = os.path.join(self.test_dir, '.env')
+        self.mc.write_file_atomic(path, 'A=1\n')
+        self.assertEqual(os.listdir(self.test_dir), ['.env'])
+
+    def test_env_reaches_both_compose_slots_as_new_files(self):
+        root = os.path.join(self.test_dir, 'mender-docker-compose')
+        for slot in ('current', 'new'):
+            os.makedirs(os.path.join(root, slot, 'manifests'))
+        stale = os.path.join(root, 'current', 'manifests', '.env')
+        with open(stale, 'wb') as f:
+            f.write(b'\x00' * 208)
+        self.mc.MENDER_COMPOSE_ROOT = root
+        output_dir = os.path.join(self.test_dir, 'config')
+        os.makedirs(output_dir)
+
+        self.mc.generate_env_file({'tar1090': {'adsblol_fallback': False}}, output_dir)
+
+        with open(os.path.join(output_dir, 'tar1090.env')) as f:
+            expected = f.read()
+        for slot in ('current', 'new'):
+            with open(os.path.join(root, slot, 'manifests', '.env')) as f:
+                self.assertEqual(f.read(), expected)
+        self.assertNotIn('\x00', expected)
+
+    def test_skips_a_slot_that_does_not_exist(self):
+        root = os.path.join(self.test_dir, 'mender-docker-compose')
+        os.makedirs(os.path.join(root, 'current', 'manifests'))
+        self.mc.MENDER_COMPOSE_ROOT = root
+        output_dir = os.path.join(self.test_dir, 'config')
+        os.makedirs(output_dir)
+
+        self.mc.generate_env_file({'tar1090': {}}, output_dir)
+
+        self.assertFalse(os.path.exists(os.path.join(root, 'new')))
+
+
 if __name__ == '__main__':
     unittest.main()
