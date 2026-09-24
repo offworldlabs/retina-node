@@ -92,6 +92,7 @@ gen_docker-compose \
     --script "${SCRIPT_DIR}/ArtifactInstall_Enter_00_retina_state" \
     --script "${SCRIPT_DIR}/ArtifactInstall_Enter_10_retina_preflight" \
     --script "${SCRIPT_DIR}/ArtifactCommit_Leave_00_retina_state" \
+    --script "${SCRIPT_DIR}/ArtifactCommit_Leave_10_retina_env_reload" \
     --script "${SCRIPT_DIR}/ArtifactFailure_Enter_00_retina_state"
 
 # Validate artifact
