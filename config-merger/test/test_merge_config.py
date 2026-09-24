@@ -63,6 +63,14 @@ class TestConfigMerge(unittest.TestCase):
 
         return output_yml
 
+    def test_config_yml_is_replaced_not_rewritten(self):
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), {'network': {'ip': '0.0.0.0'}})
+        output = self.run_merge()
+        before = os.stat(output).st_ino
+        self.run_merge()
+        self.assertNotEqual(os.stat(output).st_ino, before)
+        self.assertEqual(self.read_yaml(output)['network']['ip'], '0.0.0.0')
+
     def test_defaults_only(self):
         """Test merge with only default.yml"""
         default_config = {
@@ -1060,6 +1068,26 @@ class TestAtomicWrites(unittest.TestCase):
             with open(os.path.join(root, slot, 'manifests', '.env')) as f:
                 self.assertEqual(f.read(), expected)
         self.assertNotIn('\x00', expected)
+
+    def test_every_write_goes_through_write_file_atomic(self):
+        # ret9573ecda, 2026-08-27 23:23:18: config.yml, tar1090.env,
+        # retina-tracker.yaml and .env were all zeroed by one power cut.
+        # Temp-file-and-rename without fsync did not save the two written
+        # that way. The only write-mode open() allowed is the helper's own.
+        import ast
+        script = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'script', 'merge_config.py')
+        with open(script) as f:
+            tree = ast.parse(f.read())
+        writers = []
+        for func in [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]:
+            for call in [n for n in ast.walk(func) if isinstance(n, ast.Call)]:
+                name = getattr(call.func, 'id', None) or getattr(call.func, 'attr', None)
+                mode = call.args[1].value if len(call.args) > 1 and isinstance(call.args[1], ast.Constant) else 'r'
+                if name == 'open' and any(c in str(mode) for c in 'wax'):
+                    writers.append(func.name)
+                if name in ('copy', 'copyfile', 'rename'):
+                    writers.append(func.name)
+        self.assertEqual(sorted(set(writers)), ['write_file_atomic'])
 
     def test_skips_a_slot_that_does_not_exist(self):
         root = os.path.join(self.test_dir, 'mender-docker-compose')
