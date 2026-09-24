@@ -1,0 +1,31 @@
+#!/bin/sh
+# Recreate tar1090 from the committed composition, so it picks up the node's
+# own .env.
+#
+# The docker-compose Update Module starts the new stack from new/manifests,
+# which it copies out of the artifact and which has no .env. Compose therefore
+# interpolates tar1090's receiver location and adsb.lol settings with their
+# defaults (0,0 and off), and the config-merger writes the real .env a moment
+# too late. Nothing interpolates again until the stack next starts, which on
+# most releases is hidden by the owl-os reboot that follows the retina-node one.
+#
+# By ArtifactCommit_Leave, new/ has become current/ and holds the .env the
+# config-merger wrote. `up --no-deps tar1090` touches no other service, and
+# recreates tar1090 only if its interpolated config changed. This never fails
+# the deployment: the update is already committed.
+
+COMPOSE_ROOT="${RETINA_ENV_RELOAD_COMPOSE_ROOT:-/data/mender-docker-compose}"
+manifests="$COMPOSE_ROOT/current/manifests"
+
+if [ ! -f "$manifests/.env" ]; then
+    echo "retina-env-reload: no $manifests/.env, leaving tar1090 as started" >&2
+    exit 0
+fi
+
+if out=$(cd "$manifests" && docker compose -p retina-node up -d --no-deps tar1090 2>&1); then
+    echo "retina-env-reload: tar1090 matches $manifests/.env" >&2
+else
+    echo "retina-env-reload: could not update tar1090: $out" >&2
+fi
+
+exit 0

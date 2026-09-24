@@ -30,8 +30,9 @@ jobs:
       # installs the same two unpinned — keep the two in step.
       - run: pip install pyyaml mergedeep 'pytest>=8.0'
 
-      # Tests live under config-merger/test/, not tests/, so the path is
-      # explicit. This suite had never run in CI until 86cb4jfk7; the failure
-      # it now protects against had gone unnoticed for five months.
+      # Tests live under config-merger/test/ and scripts/test/, not tests/, so
+      # the paths are explicit. This suite had never run in CI until
+      # 86cb4jfk7; the failure it now protects against had gone unnoticed for
+      # five months. scripts/test/ runs the Mender state scripts under /bin/sh.
       - name: Tests
-        run: pytest config-merger/test/
+        run: pytest config-merger/test/ scripts/test/
