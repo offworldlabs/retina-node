@@ -44,6 +44,18 @@ MANIFEST = '''services:
 '''
 
 
+class TestStateScriptsAreExecutable(unittest.TestCase):
+    """Mender skips a state script without the executable bit. A checkout with
+    core.fileMode=false commits new files as 100644, so CI, which checks out
+    the real mode, is where this gets caught."""
+
+    def test_every_state_script_is_executable(self):
+        scripts_dir = os.path.dirname(SCRIPT)
+        for name in os.listdir(scripts_dir):
+            with self.subTest(script=name):
+                self.assertTrue(os.access(os.path.join(scripts_dir, name), os.X_OK))
+
+
 class TestPreflight(unittest.TestCase):
 
     def setUp(self):
