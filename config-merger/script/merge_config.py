@@ -132,7 +132,12 @@ def generate_env_file(config, output_dir):
     adsblol = bool(tar1090_config.get('adsblol_fallback', False)) and sited
     lines.append("# adsb.lol integration\n")
     lines.append(f"ADSBLOL_ENABLED={'true' if adsblol else 'false'}\n")
-    lines.append(f"ADSBLOL_RADIUS={tar1090_config.get('adsblol_radius', 40)}\n\n")
+    lines.append(f"ADSBLOL_RADIUS={tar1090_config.get('adsblol_radius', 40)}\n")
+    # Ordered chain of sources the tar1090 proxy tries until one answers.
+    # Written even when the fallback is off, so turning it on later needs no
+    # second config change.
+    upstreams = str(tar1090_config.get('adsb_upstreams') or 'https://api.adsb.lol').strip()
+    lines.append(f"ADSB_UPSTREAMS={upstreams}\n\n")
 
     # External ADS-B feed for readsb
     adsb_source = tar1090_config.get('adsb_source', '')
