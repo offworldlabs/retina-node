@@ -120,6 +120,11 @@ tar1090:
   adsb_source: ""  # Optional local ADS-B receiver (IP,PORT,PROTOCOL). Empty = rely on adsblol_fallback.
   adsblol_fallback: true
   adsblol_radius: 40
+  # Ordered, comma-separated list of adsb.lol-format sources the tar1090 proxy
+  # tries until one answers. A local receiver still wins over all of them.
+  # adsb.lol refuses ~88% of a node's requests with 429, so RETINA's own
+  # service goes first and adsb.lol sits behind it.
+  adsb_upstreams: "https://adsb.retina.fm,https://api.adsb.lol"
 
 # retina-tracker sidecar (github.com/offworldlabs/retina-tracker) config.
 # blah2 has no built-in tracker of its own; this sidecar does all tracking.
