@@ -258,5 +258,9 @@ services:
       - BLAH2_V=${BLAH2_V:-v0.6.0}
       - OWL_OS_V=${OWL_OS_V:-}
       - RETINA_NODE_V=${RETINA_NODE_V:-}
+      # The same variable, and the same default, that pins retina-tracker's
+      # image above: the frames carry that tracker's tracks since node ingest
+      # 1.6.0, and the heartbeat names the release that produced them.
+      - RETINA_TRACKER_V=${RETINA_TRACKER_V:-v0.3.0}
       - LOG_LEVEL=${TELEMETRY_LOG_LEVEL:-INFO}
     container_name: retina-telemetry
