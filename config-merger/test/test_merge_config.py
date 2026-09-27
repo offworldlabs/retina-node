@@ -1014,6 +1014,40 @@ class TestConfigMerge(unittest.TestCase):
         self.assertEqual(user['network']['ports']['track'], 3003)
 
 
+    def test_upstream_chain_written_to_env(self):
+        """The chain reaches the proxy as ADSB_UPSTREAMS"""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), {
+            'tar1090': {
+                'adsblol_fallback': True,
+                'adsb_upstreams': 'https://adsb.retina.fm,https://api.adsb.lol',
+                'location': {'latitude': 42.2, 'longitude': -72.7, 'altitude': 80},
+            }
+        })
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        with open(os.path.join(self.config_dir, 'tar1090.env')) as f:
+            env = f.read()
+        self.assertIn('ADSB_UPSTREAMS=https://adsb.retina.fm,https://api.adsb.lol\n', env)
+
+    def test_upstream_chain_falls_back_to_adsblol_when_unset(self):
+        """A config predating the key still produces a usable chain"""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), {
+            'tar1090': {
+                'adsblol_fallback': True,
+                'location': {'latitude': 42.2, 'longitude': -72.7, 'altitude': 80},
+            }
+        })
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+
+        self.run_merge()
+
+        with open(os.path.join(self.config_dir, 'tar1090.env')) as f:
+            env = f.read()
+        self.assertIn('ADSB_UPSTREAMS=https://api.adsb.lol\n', env)
+
+
 class TestAtomicWrites(unittest.TestCase):
     """The compose .env must be replaced whole, never rewritten in place.
 

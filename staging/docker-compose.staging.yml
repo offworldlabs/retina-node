@@ -106,6 +106,7 @@ services:
       - TAR1090_DEFAULTCENTERLON=${RECEIVER_LON:--84.65191}
       # adsb.lol proxy config
       - ADSBLOL_ENABLED=${ADSBLOL_ENABLED:-true}
+      - ADSB_UPSTREAMS=${ADSB_UPSTREAMS:-https://api.adsb.lol}
       - RECEIVER_LAT=${RECEIVER_LAT:-33.939182}
       - RECEIVER_LON=${RECEIVER_LON:--84.65191}
       - ADSBLOL_RADIUS=${ADSBLOL_RADIUS:-40}
