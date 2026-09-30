@@ -87,7 +87,52 @@ Config-merger generates config files at startup by merging:
 default.yml → user.yml → forced.yml
 ```
 
-Later files override earlier ones.
+Later files override earlier ones. A few values are then derived from the
+merged result rather than taken from any file. The notch filters below are one.
+
+### RF notch filters
+
+The RSPduo has two hardware notch filters, set by `capture.device.rfNotch` and
+`capture.device.dabNotch`. Config-merger derives both from the final
+`capture.fc` and `capture.fs` on every merge, after `forced.yml` is applied, so
+any value in `default.yml`, `user.yml` or `forced.yml` is overwritten.
+
+| Key | Stopband (SDRplay spec) | Rejection |
+| --- | --- | --- |
+| `rfNotch` (FM) | 77-115 MHz | 30 dB |
+| `dabNotch` | 155-235 MHz | at least 20 dB |
+
+A notch is on unless the capture band `[fc - fs/2, fc + fs/2]` overlaps its
+stopband (touching an edge counts as overlap). With the notch on, strong
+broadcast signals in that band are kept out of the ADC. With the capture band
+inside the stopband, the notch would reject the very signal being received, so
+it is turned off. At the shipped 503 MHz both notches are on.
+
+Why the derived value always wins: on first boot config-merger seeds `user.yml`
+with a full copy of `default.yml`, so every node already persists
+`rfNotch: true` and `dabNotch: true`. Overwriting on every merge means those
+copies need no migration, and a node moved to an FM or DAB illuminator gets the
+right notches with no hand edit. To change a notch, change `fc`.
+
+A node whose `fc` sits inside a stopband has that notch turned off by this rule,
+so its illuminator arrives 20-30 dB stronger than before. Gain set while the
+notch was on may now overload the front end: lower it, or run Auto-Calibrate
+again, after the change lands.
+
+If `fc` or `fs` is missing or not a number, the merged values are left as they
+are (`default.yml` ships both keys as `true`, and blah2 aborts on a missing
+key). blah2 cannot tune without a valid `fc` in any case.
+
+**Known limitation: live retune.** blah2 applies the notches only at
+`sdrplay_api_Init()`. blah2-api's `POST /capture/retune` changes `fc` without
+restarting blah2 and never touches the notches. retina-gui's Auto-Calibrate uses
+it to probe candidate towers, so a candidate in a different notch band from the
+starting `fc` is probed with the wrong notches (for example an FM tower probed
+with the FM notch still on, which costs it up to 30 dB). The persisted result
+is correct, because `/calibrate/apply` runs config-merger and restarts blah2.
+Standalone and staging deployments do not run config-merger: see
+[STANDALONE.md](STANDALONE.md#rf-notch-filters) and
+[staging/README.md](staging/README.md).
 
 ### Editing Config on a Node
 

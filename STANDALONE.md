@@ -142,6 +142,20 @@ For development, uncomment and edit the image versions in `.env` to quickly swit
 
 Edit `config/config.yml` to set your location, frequency, and SDR settings. See [blah2-arm documentation](https://github.com/offworldlabs/blah2-arm) for full config options.
 
+### RF notch filters
+
+Standalone skips config-merger (`SKIP_CONFIG_MERGER=true`), so nothing derives
+`capture.device.rfNotch` and `capture.device.dabNotch` from your frequency. The
+copy of `default.yml` ships both as `true`, which suits UHF. If you change
+`capture.fc` so the capture band `[fc - fs/2, fc + fs/2]` overlaps a stopband,
+set that notch to `false` yourself, or it rejects the signal you are receiving:
+
+- `rfNotch`: 77-115 MHz (FM band)
+- `dabNotch`: 155-235 MHz (DAB band)
+
+Keep both keys present: blah2 aborts if either is missing. See the
+[README](README.md#rf-notch-filters) for the full rule.
+
 ## Commands
 
 From the install location (`/opt/retina-standalone`):

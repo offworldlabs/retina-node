@@ -1048,6 +1048,88 @@ class TestConfigMerge(unittest.TestCase):
         self.assertIn('ADSB_UPSTREAMS=https://api.adsb.lol\n', env)
 
 
+    def merge_notches(self, capture, user_capture=None):
+        """Merge the given capture section and return the resulting device block"""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), {'capture': capture})
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+        user_yml = os.path.join(self.config_dir, 'user.yml')
+        if user_capture is not None:
+            self.write_yaml(user_yml, {'capture': user_capture})
+        elif os.path.exists(user_yml):
+            os.remove(user_yml)  # else the first-boot copy of a previous call wins
+        output = self.run_merge()
+        return self.read_yaml(output)['capture']['device']
+
+    def test_notches_on_for_uhf(self):
+        """The shipped 503 MHz leaves both notches on, as they were before derivation"""
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                               'config', 'default.yml')) as f:
+            capture = yaml.safe_load(f)['capture']
+        device = self.merge_notches(capture)
+        self.assertEqual(capture['fc'], 503000000)
+        self.assertIs(device['rfNotch'], True)
+        self.assertIs(device['dabNotch'], True)
+
+    def test_rf_notch_off_in_fm_band(self):
+        device = self.merge_notches({'fc': 98_000_000, 'fs': 2_000_000,
+                                     'device': {'rfNotch': True, 'dabNotch': True}})
+        self.assertIs(device['rfNotch'], False)
+        self.assertIs(device['dabNotch'], True)
+
+    def test_dab_notch_off_in_dab_band(self):
+        device = self.merge_notches({'fc': 204_640_000, 'fs': 2_000_000,
+                                     'device': {'rfNotch': True, 'dabNotch': True}})
+        self.assertIs(device['rfNotch'], True)
+        self.assertIs(device['dabNotch'], False)
+
+    def test_notch_band_edges_use_fs(self):
+        """A capture band that reaches into a stopband turns that notch off"""
+        # 116 MHz +/- 1 MHz touches the RF stopband's 115 MHz top edge
+        device = self.merge_notches({'fc': 116_000_000, 'fs': 2_000_000, 'device': {}})
+        self.assertIs(device['rfNotch'], False)
+        # the same fc with a narrower fs clears it
+        device = self.merge_notches({'fc': 116_000_000, 'fs': 1_000_000, 'device': {}})
+        self.assertIs(device['rfNotch'], True)
+        # 154 MHz +/- 1 MHz reaches the DAB stopband's 155 MHz bottom edge
+        device = self.merge_notches({'fc': 154_000_000, 'fs': 2_000_000, 'device': {}})
+        self.assertIs(device['dabNotch'], False)
+        self.assertIs(device['rfNotch'], True)
+        device = self.merge_notches({'fc': 154_000_000, 'fs': 1_000_000, 'device': {}})
+        self.assertIs(device['dabNotch'], True)
+
+    def test_notches_overwrite_user_yml(self):
+        """The persisted first-boot true/true and any hand-set value lose to fc"""
+        device = self.merge_notches(
+            {'fc': 503_000_000, 'fs': 2_000_000, 'device': {'rfNotch': True, 'dabNotch': True}},
+            user_capture={'fc': 98_000_000, 'device': {'rfNotch': True, 'dabNotch': False}})
+        self.assertIs(device['rfNotch'], False)
+        self.assertIs(device['dabNotch'], True)
+
+    def test_notches_follow_forced_fc(self):
+        """Derivation runs after forced.yml, so a forced fc decides"""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'),
+                        {'capture': {'fc': 503_000_000, 'fs': 2_000_000, 'device': {}}})
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {'capture': {'fc': 204_640_000}})
+        device = self.read_yaml(self.run_merge())['capture']['device']
+        self.assertIs(device['dabNotch'], False)
+        self.assertIs(device['rfNotch'], True)
+
+    def test_notches_left_alone_without_fc(self):
+        """No usable fc: the merged values stand and the merge still succeeds"""
+        device = self.merge_notches({'fs': 2_000_000, 'device': {'rfNotch': True, 'dabNotch': False}})
+        self.assertIs(device['rfNotch'], True)
+        self.assertIs(device['dabNotch'], False)
+
+        device = self.merge_notches({'fc': 'abc', 'fs': 2_000_000,
+                                     'device': {'rfNotch': False, 'dabNotch': True}})
+        self.assertIs(device['rfNotch'], False)
+        self.assertIs(device['dabNotch'], True)
+
+    def test_no_capture_section_adds_no_notches(self):
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), {'network': {'ip': '0.0.0.0'}})
+        self.assertNotIn('capture', self.read_yaml(self.run_merge()))
+
+
 class TestAtomicWrites(unittest.TestCase):
     """The compose .env must be replaced whole, never rewritten in place.
 
