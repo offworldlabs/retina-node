@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Manually merge config files for staging
 # Combines: default.yml → user.yml → forced.yml = config.yml
-# Unlike config-merger, this does not derive the RF/DAB notch filters from fc.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
