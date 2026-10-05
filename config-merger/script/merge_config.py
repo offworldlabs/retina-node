@@ -8,8 +8,6 @@ Also syncs the node_id field in user.yml from Mender device identity (/data/mend
 Generates tar1090.env for tar1090-node if the tar1090 section exists in config.
 Generates retina-tracker.yaml for the retina-tracker sidecar if the
 retina_tracker section exists in config.
-Derives the RSPduo DAB and RF notch filters from the final capture.fc and
-capture.fs, overwriting whatever the merged files held (see derive_notches()).
 
 Takes as inputs:
 1. Defaults directory - holds baked-in default.yml and forced.yml
@@ -52,14 +50,6 @@ LEGACY_TRACKER_FORWARD = {
 # the node's own tar1090. A user.yml holding exactly this is the merger's own
 # first-boot copy rather than anyone's choice. See migrate_adsb_truth_server().
 LEGACY_ADSB_TAR1090 = 'sfo1.retnode.com'
-
-# RSPduo notch filter stopbands in Hz, from the SDRplay spec. The RF (FM) notch
-# rejects 30 dB over 77-115 MHz, the DAB notch at least 20 dB over 155-235 MHz.
-# See derive_notches().
-RF_NOTCH_MIN_HZ = 77_000_000
-RF_NOTCH_MAX_HZ = 115_000_000
-DAB_NOTCH_MIN_HZ = 155_000_000
-DAB_NOTCH_MAX_HZ = 235_000_000
 
 
 def get_node_id_from_mender():
@@ -211,42 +201,6 @@ def migrate_gain_reduction(config):
     if isinstance(gain, (int, float)):
         print(f"Migrating legacy scalar gainReduction ({gain}) to per-tuner pair [{gain}, {gain}]")
         config['capture']['device']['gainReduction'] = [gain, gain]
-
-
-def derive_notches(config):
-    """Set capture.device.dabNotch and rfNotch from the final capture.fc and fs.
-
-    A notch is on unless the capture band [fc - fs/2, fc + fs/2] overlaps its
-    stopband (touching an edge counts). Runs on the merged config, so the result
-    overwrites default.yml, user.yml and forced.yml alike. That is why the
-    true/true every node persisted in its first-boot user.yml needs no LEGACY_*
-    migration. Rationale and the live-retune caveat: README.md, "RF notch filters".
-    """
-    try:
-        capture = config['capture']
-        fc = capture['fc']
-        fs = capture['fs']
-    except (KeyError, TypeError):
-        return
-
-    # With no usable fc or fs, leave the merged values: blah2 cannot tune anyway,
-    # and default.yml guarantees both keys exist.
-    if (not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in (fc, fs))
-            or fc <= 0 or fs < 0):
-        print(f"Cannot derive notch filters from capture.fc={fc!r}, fs={fs!r}; leaving them as merged")
-        return
-
-    device = capture.setdefault('device', {})
-    if not isinstance(device, dict):
-        return
-
-    low, high = fc - fs / 2, fc + fs / 2
-    rf = not (low <= RF_NOTCH_MAX_HZ and high >= RF_NOTCH_MIN_HZ)
-    dab = not (low <= DAB_NOTCH_MAX_HZ and high >= DAB_NOTCH_MIN_HZ)
-    device['rfNotch'] = rf
-    device['dabNotch'] = dab
-    print(f"Derived notch filters for {low / 1e6:g}-{high / 1e6:g} MHz: "
-          f"rfNotch={str(rf).lower()}, dabNotch={str(dab).lower()}")
 
 
 def migrate_doppler_span(user):
@@ -508,9 +462,6 @@ def main():
 
         # Migrate legacy field formats forward (e.g. scalar -> per-tuner gainReduction)
         migrate_gain_reduction(config)
-
-        # Notches follow the final frequency, whatever any overlay said
-        derive_notches(config)
 
         # Write merged config to output
         print(f"Writing merged config to {output_config_path}")

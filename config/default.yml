@@ -7,9 +7,6 @@ capture:
     bandwidthNumber: 0
     gainReduction: [40, 40] #20-59 dB each, [reference, surveillance], higher is less gain
     lnaState: 4 #1-9, higher is more gain
-    # Derived by config-merger from fc and fs on every merge, overwriting any
-    # value set here or in user.yml. Kept so config.yml always has both keys
-    # (blah2 aborts without them). See README.md, "RF notch filters".
     dabNotch: true
     rfNotch: true
   replay:

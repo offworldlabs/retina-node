@@ -123,12 +123,6 @@ This creates `config/config.yml` by merging:
 
 **Optional**: Edit `config/user.yml` to override specific settings.
 
-`merge-config.sh` is a plain merge, not config-merger, so it does not derive the
-RF and DAB notch filters from `capture.fc`. The `true`/`true` from `default.yml`
-passes through, which is right for UHF. If you override `fc` into 77-115 MHz or
-155-235 MHz, set `rfNotch` or `dabNotch` to `false` in `config/user.yml` as well.
-See the main [README](../README.md#rf-notch-filters).
-
 ### Step 4: Start Services
 
 ```bash
