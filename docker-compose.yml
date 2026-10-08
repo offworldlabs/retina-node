@@ -165,7 +165,12 @@ services:
       - /dev/shm:/dev/shm:rw
       - /dev/bus/usb:/dev/bus/usb:rw
       - /usr/local/lib/libsdrplay_api.so.3.15:/usr/local/lib/libsdrplay_api.so.3:ro
-    command: bash -c "pkill -9 -f sdrplay_apiService 2>/dev/null || true && sleep 2 && retina-spectrum --web-dir /web"
+    # No SDRplay service kill here: resetting the service belongs to the host
+    # side that holds the restart lock (retina-gui and the watchdog). The kill
+    # this replaced never ran, because the image has no pkill, and a working
+    # `pkill -f` on that name would have killed this shell, whose command line
+    # contains it. The pause stays as before.
+    command: bash -c "sleep 2 && retina-spectrum --web-dir /web"
     container_name: retina-spectrum
 
   retina-tracker:
