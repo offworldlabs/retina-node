@@ -22,8 +22,10 @@ process:
   ambiguity:
     delayMin: -10
     delayMax: 400
-    dopplerMin: -300
-    dopplerMax: 300
+    # Fleet policy: merge_config.py's migrate_doppler_span() drops any user.yml
+    # override. retina-gui's Tracker narrows the view, not the processing.
+    dopplerMin: -1000
+    dopplerMax: 1000
   clutter:
     enable: true
     delayMin: -10
