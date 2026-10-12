@@ -31,12 +31,6 @@ import sys
 import yaml
 from mergedeep import merge
 
-# The Doppler span default.yml shipped up to and including v0.4.5.0. A user.yml
-# holding exactly this pair is assumed to be the merger's own first-boot copy
-# rather than anyone's choice. See migrate_doppler_span().
-LEGACY_DOPPLER_MIN = -200
-LEGACY_DOPPLER_MAX = 200
-
 # The tracker_forward block default.yml shipped while retina-gui still did the
 # forwarding itself. A user.yml holding exactly this is the merger's own
 # first-boot copy rather than anyone's choice. See migrate_tracker_forward().
@@ -204,23 +198,24 @@ def migrate_gain_reduction(config):
 
 
 def migrate_doppler_span(user):
-    """Drop a Doppler span the user never chose, so default.yml can change it.
+    """Drop any Doppler span from user.yml, so every node runs default.yml's.
 
-    On first boot the merger seeds user.yml with a whole copy of default.yml, so
-    every deployed node persists the shipped Doppler span whether or not anyone
-    selected it. Without this, a change to default.yml could never reach a node
-    that has already booted once.
+    The span is fleet policy, not a per-node setting: blah2 always processes
+    +/-1000 Hz so that activity outside the +/-300 Hz where ordinary air traffic
+    sits can still be reported. How much of that span is shown is a
+    presentation choice, made per browser on retina-gui's Tracker page, and
+    never touches config.
 
-    Only the exact legacy pair is dropped, and only when both bounds match: any
-    other value is a deliberate setting and is left alone. owl runs +/-1000 Hz,
-    which must survive. A node that genuinely wants +/-200 Hz is indistinguishable
-    from a first-boot copy, so it moves to the new default and has to be set
-    again if that is not wanted.
+    Unconditional, unlike the LEGACY_* migrations below. The merger seeds
+    user.yml with a whole copy of default.yml on first boot, so every node
+    persists whichever span shipped when it booted (+/-200 Hz up to v0.4.5.0,
+    +/-300 Hz since), and a node that chose a span is indistinguishable from one
+    that never did. Each bound is dropped on its own, so a half-set pair cannot
+    survive either. forced.yml still has the last word.
 
-    Dropping the keys rather than rewriting them means whatever default.yml ships
-    takes effect, including a later change to some other value. user.yml on disk
-    is untouched, so this stays load-bearing: remove it and nodes fall back to
-    the +/-200 Hz their overlay still holds.
+    Dropping the keys rather than rewriting them leaves user.yml on disk
+    untouched, so this stays load-bearing: remove it and nodes fall back to the
+    span their overlay still holds.
     """
     try:
         ambiguity = user['process']['ambiguity']
@@ -230,12 +225,11 @@ def migrate_doppler_span(user):
     if not isinstance(ambiguity, dict):
         return
 
-    if (ambiguity.get('dopplerMin') == LEGACY_DOPPLER_MIN
-            and ambiguity.get('dopplerMax') == LEGACY_DOPPLER_MAX):
-        print(f"Dropping first-boot Doppler span ({LEGACY_DOPPLER_MIN}/{LEGACY_DOPPLER_MAX} Hz) "
-              "from user config so the shipped default applies")
-        del ambiguity['dopplerMin']
-        del ambiguity['dopplerMax']
+    for key in ('dopplerMin', 'dopplerMax'):
+        if key in ambiguity:
+            print(f"Dropping process.ambiguity.{key} ({ambiguity[key]} Hz) from user config: "
+                  "the Doppler span is fleet policy, set by the shipped default")
+            del ambiguity[key]
 
 
 def migrate_tracker_forward(user):
@@ -291,8 +285,8 @@ def migrate_remove_tracker(user):
     the block that shipped when it booted. Same first-boot copy problem
     migrate_doppler_span() and migrate_tracker_forward() solve.
 
-    Unconditional, unlike the migrations above, which compare against a LEGACY_*
-    value so a deliberate choice survives. There is no deliberate choice to
+    Unconditional, unlike migrate_tracker_forward(), which compares against a
+    LEGACY_* value so a deliberate choice survives. There is no deliberate choice to
     protect here: the code these keys configured does not exist, so any value is
     equally dead. network.ports.track goes the same way, since the socket blah2
     published tracks on and the listener blah2-api read them with are both gone.
