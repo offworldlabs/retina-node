@@ -17,7 +17,7 @@ services:
 
   config-merger:
     restart: "no"  # Run once and exit
-    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_V:-v0.4.7.2}
+    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_V:-v0.4.8.0-dev}
     volumes:
       - ${CONFIG_DIR:-/data/retina-node/config}:/data/retina-node/config
       - ${MENDER_COMPOSE_DIR:-/data/mender-docker-compose}:/data/mender-docker-compose
@@ -35,7 +35,7 @@ services:
 
   blah2:
     restart: always
-    image: ghcr.io/offworldlabs/blah2:${BLAH2_V:-v0.6.3}
+    image: ghcr.io/offworldlabs/blah2:${BLAH2_V:-v0.7.0}
     tty: true
     depends_on:
       config-merger:
@@ -59,7 +59,7 @@ services:
 
   blah2_web:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-web:${BLAH2_V:-v0.6.3}
+    image: ghcr.io/offworldlabs/blah2-web:${BLAH2_V:-v0.7.0}
     ports:
       - "${BLAH2_WEB_PORT:-49152}:80"
     networks:
@@ -68,7 +68,7 @@ services:
 
   blah2_api:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-api:${BLAH2_V:-v0.6.3}
+    image: ghcr.io/offworldlabs/blah2-api:${BLAH2_V:-v0.7.0}
     depends_on:
       config-merger:
         condition: service_completed_successfully
@@ -80,7 +80,7 @@ services:
 
   blah2_host:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-host:${BLAH2_V:-v0.6.3}
+    image: ghcr.io/offworldlabs/blah2-host:${BLAH2_V:-v0.7.0}
     ports:
       - "${BLAH2_HOST_PORT:-8080}:80"
     networks:
@@ -148,7 +148,7 @@ services:
   retina-spectrum:
     profiles: [spectrum]
     restart: "no"
-    image: ghcr.io/offworldlabs/retina-spectrum:${SPECTRUM_V:-v0.1.1}
+    image: ghcr.io/offworldlabs/retina-spectrum:${SPECTRUM_V:-v0.1.2}
     network_mode: host
     # Pinned for the same reason as retina-telemetry: this resolves
     # tower-finder.retina.fm, so it must not depend on the host's resolv.conf
@@ -175,7 +175,7 @@ services:
 
   retina-tracker:
     restart: always
-    image: ghcr.io/offworldlabs/retina-tracker:${RETINA_TRACKER_V:-v0.4.0}
+    image: ghcr.io/offworldlabs/retina-tracker:${RETINA_TRACKER_V:-v0.5.0}
     network_mode: host
     depends_on:
       config-merger:
@@ -261,12 +261,12 @@ services:
       # Image tags, so `versions` in the heartbeat reports something true.
       # RETINA_NODE_V has no source on a node yet; it is passed so it starts
       # working the moment owl-os provides one.
-      - BLAH2_V=${BLAH2_V:-v0.6.3}
+      - BLAH2_V=${BLAH2_V:-v0.7.0}
       - OWL_OS_V=${OWL_OS_V:-}
       - RETINA_NODE_V=${RETINA_NODE_V:-}
       # The same variable, and the same default, that pins retina-tracker's
       # image above: the frames carry that tracker's tracks since node ingest
       # 1.6.0, and the heartbeat names the release that produced them.
-      - RETINA_TRACKER_V=${RETINA_TRACKER_V:-v0.4.0}
+      - RETINA_TRACKER_V=${RETINA_TRACKER_V:-v0.5.0}
       - LOG_LEVEL=${TELEMETRY_LOG_LEVEL:-INFO}
     container_name: retina-telemetry
