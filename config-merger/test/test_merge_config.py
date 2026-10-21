@@ -574,25 +574,36 @@ class TestConfigMerge(unittest.TestCase):
         self.assertIn('RECEIVER_LON=-122.3954', env_content)
         self.assertIn('RECEIVER_ALT=23', env_content)
 
+    def tracker_yaml(self):
+        """retina-tracker.yaml as the tracker itself would load it.
+
+        Mirrors retina_tracker.config.load_config() (v0.5.0): it updates each of
+        its own sections from the file's, so a null section or a null file raises
+        there and the tracker crash-loops. Asserting through this catches that
+        here instead of on a node.
+        """
+        loaded = self.read_yaml(os.path.join(self.config_dir, 'retina-tracker.yaml'))
+        tracker_defaults = {'tracker': {'m_threshold': 3, 'gate_threshold': 9.0}}
+        for key in tracker_defaults:
+            if key in loaded:
+                tracker_defaults[key].update(loaded[key])
+        return loaded
+
     def test_retina_tracker_yaml_generated(self):
-        """Test that retina-tracker.yaml is generated when retina_tracker config exists"""
+        """retina-tracker.yaml carries the retina_tracker section as `tracker`"""
         default_config = {
             'process': {'detection': {'pfa': 0.001}},
-            'retina_tracker': {'min_snr': 7.0},
+            'retina_tracker': {'gate_threshold': 12.0},
         }
         self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
         self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
 
         self.run_merge()
 
-        tracker_yaml_path = os.path.join(self.config_dir, 'retina-tracker.yaml')
-        self.assertTrue(os.path.exists(tracker_yaml_path), "retina-tracker.yaml should be generated")
+        self.assertEqual(self.tracker_yaml(), {'tracker': {'gate_threshold': 12.0}})
 
-        output = self.read_yaml(tracker_yaml_path)
-        self.assertEqual(output, {'tracker': {'min_snr': 7.0}})
-
-    def test_retina_tracker_yaml_not_generated_without_config(self):
-        """Test that retina-tracker.yaml is not generated when retina_tracker config is missing"""
+    def test_retina_tracker_yaml_empty_without_config(self):
+        """With no retina_tracker section the file is still written, as {}"""
         default_config = {
             'process': {'detection': {'pfa': 0.001}},
             'network': {'ip': '0.0.0.0'},
@@ -602,17 +613,15 @@ class TestConfigMerge(unittest.TestCase):
 
         self.run_merge()
 
-        tracker_yaml_path = os.path.join(self.config_dir, 'retina-tracker.yaml')
-        self.assertFalse(os.path.exists(tracker_yaml_path),
-                          "retina-tracker.yaml should not be generated without retina_tracker config")
+        self.assertEqual(self.tracker_yaml(), {})
 
     def test_retina_tracker_yaml_user_override(self):
-        """Test that user config overrides retina_tracker settings in retina-tracker.yaml"""
+        """user.yml overrides retina_tracker settings in retina-tracker.yaml"""
         default_config = {
-            'retina_tracker': {'min_snr': 7.0},
+            'retina_tracker': {'gate_threshold': 12.0},
         }
         user_config = {
-            'retina_tracker': {'min_snr': 4.5},
+            'retina_tracker': {'gate_threshold': 15.0},
         }
         self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'), default_config)
         self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
@@ -620,9 +629,79 @@ class TestConfigMerge(unittest.TestCase):
 
         self.run_merge()
 
-        tracker_yaml_path = os.path.join(self.config_dir, 'retina-tracker.yaml')
-        output = self.read_yaml(tracker_yaml_path)
-        self.assertEqual(output['tracker']['min_snr'], 4.5)
+        self.assertEqual(self.tracker_yaml()['tracker']['gate_threshold'], 15.0)
+
+    # --- min_snr removal ----------------------------------------------------
+    # retina-tracker v0.5.0 reads no SNR threshold. Every node's user.yml still
+    # holds the first-boot copy of it, so the merger drops it there.
+
+    def write_min_snr_configs(self, user_tracker):
+        """A default.yml without retina_tracker, as shipped, and a user.yml holding one."""
+        self.write_yaml(os.path.join(self.defaults_dir, 'default.yml'),
+                        {'process': {'detection': {'pfa': 0.001}}})
+        self.write_yaml(os.path.join(self.defaults_dir, 'forced.yml'), {})
+        self.write_yaml(os.path.join(self.config_dir, 'user.yml'),
+                        {'process': {'detection': {'pfa': 0.001}}, 'retina_tracker': user_tracker})
+
+    def test_min_snr_first_boot_copy_dropped(self):
+        """The first-boot 7.0, or any value retina-gui wrote, is gone from both outputs"""
+        for value in (7.0, 4.5):
+            with self.subTest(min_snr=value):
+                self.write_min_snr_configs({'min_snr': value})
+
+                output = self.read_yaml(self.run_merge())
+
+                self.assertNotIn('retina_tracker', output)
+                self.assertEqual(self.tracker_yaml(), {})
+
+    def test_min_snr_dropped_other_tracker_keys_kept(self):
+        """Only min_snr goes; a real tracker override in the same section survives"""
+        self.write_min_snr_configs({'min_snr': 4.5, 'gate_threshold': 12.0})
+
+        output = self.read_yaml(self.run_merge())
+
+        self.assertEqual(output['retina_tracker'], {'gate_threshold': 12.0})
+        self.assertEqual(self.tracker_yaml(), {'tracker': {'gate_threshold': 12.0}})
+
+    def test_empty_or_null_tracker_section_never_reaches_the_tracker_as_null(self):
+        """An empty or null section is dropped, never written as `tracker: null`"""
+        for section in ({}, None):
+            with self.subTest(section=section):
+                self.write_min_snr_configs(section)
+
+                output = self.read_yaml(self.run_merge())
+
+                self.assertNotIn('retina_tracker', output)
+                self.assertEqual(self.tracker_yaml(), {})
+
+    def test_stale_tracker_yaml_overwritten(self):
+        """A file left by an earlier merge is replaced, not left saying min_snr"""
+        self.write_min_snr_configs({'min_snr': 7.0})
+        self.write_yaml(os.path.join(self.config_dir, 'retina-tracker.yaml'),
+                        {'tracker': {'min_snr': 7.0}})
+
+        self.run_merge()
+
+        self.assertEqual(self.tracker_yaml(), {})
+
+    def test_min_snr_migration_does_not_rewrite_user_yml(self):
+        """user.yml on disk is untouched, so the migration stays load-bearing"""
+        self.write_min_snr_configs({'min_snr': 7.0})
+        user_path = os.path.join(self.config_dir, 'user.yml')
+        with open(user_path) as f:
+            before = f.read()
+
+        self.run_merge()
+
+        with open(user_path) as f:
+            self.assertEqual(f.read(), before)
+
+    def test_shipped_default_has_no_min_snr(self):
+        """The repo's own default.yml no longer ships a retina_tracker section"""
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        with open(os.path.join(repo_root, 'config', 'default.yml')) as f:
+            shipped = yaml.safe_load(f)
+        self.assertNotIn('retina_tracker', shipped)
 
 
     # --- Doppler span migration -------------------------------------------

@@ -128,11 +128,11 @@ tar1090:
   # service goes first and adsb.lol sits behind it.
   adsb_upstreams: "https://adsb.retina.fm,https://api.adsb.lol"
 
-# retina-tracker sidecar (github.com/offworldlabs/retina-tracker) config.
-# blah2 has no built-in tracker of its own; this sidecar does all tracking.
-retina_tracker:
-  # dB. Detections below this are discarded before tracking even begins -
-  # too high and the tracker silently never confirms a track no matter how
-  # good the search geometry is. Tune to this node's real noise floor
-  # (compare against SNR values from blah2_api's /api/detection).
-  min_snr: 7.0
+# retina-tracker sidecar (github.com/offworldlabs/retina-tracker): no section,
+# so it runs on its own built-in defaults. blah2 has no built-in tracker; this
+# sidecar does all tracking. A `retina_tracker:` section added here is written
+# to retina-tracker.yaml as the tracker's `tracker` section; see
+# generate_retina_tracker_config() in config-merger/script/merge_config.py.
+# min_snr is gone for good: retina-tracker v0.5.0 tracks every detection and
+# reads no SNR threshold, and the merger drops it from user.yml
+# (migrate_remove_min_snr).
