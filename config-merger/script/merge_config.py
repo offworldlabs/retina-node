@@ -6,8 +6,8 @@ Designed to be run in both blah2 and blah2-api containers with baked-in configs.
 Merges default.yml + user.yml + forced.yml into config.yml.
 Also syncs the node_id field in user.yml from Mender device identity (/data/mender/node_id).
 Generates tar1090.env for tar1090-node if the tar1090 section exists in config.
-Generates retina-tracker.yaml for the retina-tracker sidecar if the
-retina_tracker section exists in config.
+Generates retina-tracker.yaml for the retina-tracker sidecar on every run, from
+the retina_tracker section if config has one and as an empty mapping if not.
 
 Takes as inputs:
 1. Defaults directory - holds baked-in default.yml and forced.yml
@@ -167,16 +167,24 @@ def generate_retina_tracker_config(config, output_dir):
     here are assumed to belong to retina-tracker's own `tracker` section;
     revisit this mapping if fields for its other sections (`process_noise`,
     `tracklet`, `adsb`, ...) are ever added to default.yml.
+
+    Written on every run, as `{}` when there is nothing to override, so the
+    file always matches this merge. Skipping it left the last merge's file on
+    disk, which on every node said `min_snr: 7.0` long after that key was gone.
+
+    Never writes `tracker: null`. load_config() would call .update(None) on it
+    and the tracker would crash-loop; an empty or non-mapping section counts as
+    nothing to override.
     """
-    if 'retina_tracker' not in config:
-        print("No retina_tracker config found, skipping retina-tracker.yaml generation")
-        return
+    section = config.get('retina_tracker')
+    tracker = section if isinstance(section, dict) and section else None
 
     output_path = os.path.join(output_dir, 'retina-tracker.yaml')
-    print(f"Writing retina-tracker config to {output_path}")
+    print(f"Writing retina-tracker config to {output_path}"
+          + ("" if tracker else " (no overrides; the tracker uses its own defaults)"))
 
     write_file_atomic(output_path, yaml.dump(
-        {'tracker': config['retina_tracker']}, default_flow_style=False, sort_keys=False))
+        {'tracker': tracker} if tracker else {}, default_flow_style=False, sort_keys=False))
     print("retina-tracker.yaml generated successfully!")
 
 
@@ -319,6 +327,41 @@ def migrate_remove_tracker(user):
         del ports['track']
 
 
+def migrate_remove_min_snr(user):
+    """Drop retina_tracker.min_snr, which no tracker reads any more.
+
+    retina-tracker v0.5.0 tracks every detection: its per-site SNR gate is gone
+    (retina-tracker ed9bbea), and a config that still sets min_snr is loaded and
+    ignored. retina-gui no longer offers the field, and default.yml no longer
+    ships it, but that alone reaches no node: the merger seeds user.yml with a
+    whole copy of default.yml on first boot, so every node on the estate still
+    holds `retina_tracker: {min_snr: 7.0}`, or whatever retina-gui wrote there.
+    Same first-boot copy problem as migrate_remove_tracker().
+
+    Unconditional, like migrate_remove_tracker(): the code the key configured is
+    gone, so any value is equally dead. The section goes with it once it is empty,
+    so the merged config carries no `retina_tracker` at all rather than an empty
+    one. An empty or null section is dropped for the same reason: it would
+    otherwise reach the tracker as `tracker: null` (see
+    generate_retina_tracker_config()).
+
+    Dropping the key rather than rewriting it leaves user.yml on disk untouched,
+    so this stays load-bearing rather than a one-shot fixup, and a Mender rollback
+    regenerates the old config from the old default.yml.
+    """
+    if not isinstance(user, dict) or 'retina_tracker' not in user:
+        return
+
+    section = user['retina_tracker']
+    if isinstance(section, dict) and 'min_snr' in section:
+        print(f"Dropping retina_tracker.min_snr ({section['min_snr']}) from user config: "
+              "retina-tracker no longer has an SNR threshold")
+        del section['min_snr']
+
+    if not section:
+        del user['retina_tracker']
+
+
 def migrate_adsb_truth_server(user):
     """Drop an ADS-B truth server the user never chose, so default.yml can change it.
 
@@ -439,6 +482,7 @@ def main():
                 migrate_doppler_span(user)
                 migrate_tracker_forward(user)
                 migrate_remove_tracker(user)
+                migrate_remove_min_snr(user)
                 migrate_adsb_truth_server(user)
                 merge(config, user)
             else:
