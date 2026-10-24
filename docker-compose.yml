@@ -6,8 +6,21 @@
 #
 # See .env.example for standalone configuration.
 #
-# Releases: Update the version after :- in each image tag (e.g., :-v0.3.0 → :-v0.4.0)
-#   BLAH2_V, TAR1090_V, ADSB2DD_V, CONFIG_MERGER_V, RETINA_TRACKER_V
+# Releases: Update the version after :- in each image tag (e.g., :-v0.3.0 → :-v0.4.0).
+# All seven, so that none is silently left behind:
+#   BLAH2_V, SPECTRUM_V, RETINA_TRACKER_V, TELEMETRY_V, TAR1090_V, ADSB2DD_V,
+#   CONFIG_MERGER_V
+#
+# RETINA_TRACKER_V is referenced twice, once for the tracker image and once in
+# retina-telemetry's heartbeat, and the two defaults have to agree.
+#
+# CONFIG_MERGER_V is not like the others. config-merger is built from this repo,
+# by this repo's own release workflow, which publishes it before the Mender
+# artifact is built. So it is always set to the retina-node version being
+# tagged, even though that tag does not exist yet at commit time, and whether or
+# not config-merger itself changed. Left at an older value it pins an image
+# nothing rebuilds against, and merger fixes never reach a node: that happened
+# for six consecutive releases.
 
 networks:
   blah2:
@@ -17,7 +30,7 @@ services:
 
   config-merger:
     restart: "no"  # Run once and exit
-    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_V:-v0.4.8.0-dev}
+    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_V:-v0.4.8.0}
     volumes:
       - ${CONFIG_DIR:-/data/retina-node/config}:/data/retina-node/config
       - ${MENDER_COMPOSE_DIR:-/data/mender-docker-compose}:/data/mender-docker-compose
@@ -175,7 +188,7 @@ services:
 
   retina-tracker:
     restart: always
-    image: ghcr.io/offworldlabs/retina-tracker:${RETINA_TRACKER_V:-v0.5.0}
+    image: ghcr.io/offworldlabs/retina-tracker:${RETINA_TRACKER_V:-v0.6.0}
     network_mode: host
     depends_on:
       config-merger:
@@ -267,6 +280,6 @@ services:
       # The same variable, and the same default, that pins retina-tracker's
       # image above: the frames carry that tracker's tracks since node ingest
       # 1.6.0, and the heartbeat names the release that produced them.
-      - RETINA_TRACKER_V=${RETINA_TRACKER_V:-v0.5.0}
+      - RETINA_TRACKER_V=${RETINA_TRACKER_V:-v0.6.0}
       - LOG_LEVEL=${TELEMETRY_LOG_LEVEL:-INFO}
     container_name: retina-telemetry
