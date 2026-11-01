@@ -26,6 +26,8 @@ process:
     # override. retina-gui's Tracker narrows the view, not the processing.
     dopplerMin: -1000
     dopplerMax: 1000
+    # none or hann. See blah2-arm's config/README.md.
+    dopplerWindow: none
   clutter:
     enable: true
     delayMin: -10
@@ -37,6 +39,11 @@ process:
     nTrain: 6
     minDelay: 5
     minDoppler: 15
+    # Reports nothing faster than this, without narrowing the processing the
+    # way dopplerMax does. At the span's own edge it limits nothing. A new key,
+    # so no user.yml holds it and it needs no migration to land.
+    # See blah2-arm's config/README.md.
+    maxReportedDoppler: 1000
     nCentroid: 6
 
 network:

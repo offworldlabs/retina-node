@@ -140,7 +140,7 @@ For development, uncomment and edit the image versions in `.env` to quickly swit
 
 ### `config/config.yml` - blah2 Settings
 
-Edit `config/config.yml` to set your location, frequency, and SDR settings. See [blah2-arm documentation](https://github.com/offworldlabs/blah2-arm) for full config options.
+Edit `config/config.yml` to set your location, frequency, and SDR settings. See [blah2-arm documentation](https://github.com/offworldlabs/blah2-arm) for full config options, and its [config/README.md](https://github.com/offworldlabs/blah2-arm/blob/main/config/README.md) for what each `process` setting does.
 
 ## Commands
 
