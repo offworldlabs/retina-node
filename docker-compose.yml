@@ -30,7 +30,7 @@ services:
 
   config-merger:
     restart: "no"  # Run once and exit
-    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_V:-v0.4.8.0}
+    image: ghcr.io/offworldlabs/retina-config-merger:${CONFIG_MERGER_V:-v0.4.9.0-dev}
     volumes:
       - ${CONFIG_DIR:-/data/retina-node/config}:/data/retina-node/config
       - ${MENDER_COMPOSE_DIR:-/data/mender-docker-compose}:/data/mender-docker-compose
@@ -48,7 +48,7 @@ services:
 
   blah2:
     restart: always
-    image: ghcr.io/offworldlabs/blah2:${BLAH2_V:-v0.7.0}
+    image: ghcr.io/offworldlabs/blah2:${BLAH2_V:-v0.8.0}
     tty: true
     depends_on:
       config-merger:
@@ -72,7 +72,7 @@ services:
 
   blah2_web:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-web:${BLAH2_V:-v0.7.0}
+    image: ghcr.io/offworldlabs/blah2-web:${BLAH2_V:-v0.8.0}
     ports:
       - "${BLAH2_WEB_PORT:-49152}:80"
     networks:
@@ -81,7 +81,7 @@ services:
 
   blah2_api:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-api:${BLAH2_V:-v0.7.0}
+    image: ghcr.io/offworldlabs/blah2-api:${BLAH2_V:-v0.8.0}
     depends_on:
       config-merger:
         condition: service_completed_successfully
@@ -93,7 +93,7 @@ services:
 
   blah2_host:
     restart: always
-    image: ghcr.io/offworldlabs/blah2-host:${BLAH2_V:-v0.7.0}
+    image: ghcr.io/offworldlabs/blah2-host:${BLAH2_V:-v0.8.0}
     ports:
       - "${BLAH2_HOST_PORT:-8080}:80"
     networks:
@@ -274,7 +274,7 @@ services:
       # Image tags, so `versions` in the heartbeat reports something true.
       # RETINA_NODE_V has no source on a node yet; it is passed so it starts
       # working the moment owl-os provides one.
-      - BLAH2_V=${BLAH2_V:-v0.7.0}
+      - BLAH2_V=${BLAH2_V:-v0.8.0}
       - OWL_OS_V=${OWL_OS_V:-}
       - RETINA_NODE_V=${RETINA_NODE_V:-}
       # The same variable, and the same default, that pins retina-tracker's
