@@ -46,12 +46,12 @@ if [ ! -f config/user.yml ]; then
 
 location:
   rx:
-    latitude: 33.939182
-    longitude: -84.65191
+    latitude: 33.900000
+    longitude: -84.600000
     altitude: 320
-    name: "radar3-rx"
+    name: "staging-rx"
   tx:
-    latitude: 33.939182
+    latitude: 33.900000
     longitude: -84.331844
     altitude: 650
     name: "WXIA HDTV"
@@ -88,9 +88,9 @@ BLAH2_WEB_PORT=49152
 BLAH2_HOST_PORT=8080
 TAR1090_PORT=8078
 
-# Location (radar3)
-RECEIVER_LAT=33.939182
-RECEIVER_LON=-84.65191
+# Location (placeholder)
+RECEIVER_LAT=33.900000
+RECEIVER_LON=-84.600000
 RECEIVER_ALT=320
 TZ=America/New_York
 

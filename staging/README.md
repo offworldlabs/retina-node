@@ -98,9 +98,9 @@ TAR1090_V=v0.2.0
 BLAH2_WEB_PORT=49152
 TAR1090_PORT=8078
 
-# Location (radar3 - already configured)
-RECEIVER_LAT=33.939182
-RECEIVER_LON=-84.65191
+# Location (placeholder - already configured)
+RECEIVER_LAT=33.900000
+RECEIVER_LON=-84.600000
 RECEIVER_ALT=320
 
 # ADS-B feed from radar3
