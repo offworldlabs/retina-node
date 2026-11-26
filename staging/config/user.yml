@@ -1,14 +1,14 @@
 # Staging environment configuration
-# Uses radar3.retnode.com location and pulls ADS-B data from production
+# Placeholder receiver location; pulls ADS-B data from production
 
 location:
   rx:
-    latitude: 33.939182
-    longitude: -84.65191
+    latitude: 33.900000
+    longitude: -84.600000
     altitude: 320
-    name: "radar3-rx (Wilderness)"
+    name: "staging-rx"
   tx:
-    latitude: 33.939182
+    latitude: 33.900000
     longitude: -84.331844
     altitude: 650
     name: "WXIA HDTV"
